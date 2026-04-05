@@ -19,7 +19,7 @@ int main() {
    return 1;
   }
   
-  // Since the tester restarts your program quite often, setting SO_REUSEADDR
+  // Since the tester restarts the program quite often, setting SO_REUSEADDR
   // ensures that we don't run into 'Address already in use' errors
   int reuse = 1;
   if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
@@ -47,7 +47,6 @@ int main() {
   socklen_t client_addr_len = sizeof(client_addr);
   std::cout << "Waiting for a client to connect...\n";
 
-  // You can use print statements as follows for debugging, they'll be visible when running tests.
   std::cout << "Logs from your program will appear here!\n";
 
   accept(server_fd, reinterpret_cast<sockaddr *>(&client_addr), &client_addr_len);
