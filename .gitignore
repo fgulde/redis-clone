@@ -1045,6 +1045,6 @@ dkms.conf
 *.dis
 
 vcpkg_installed.codecrafters/
-.codecrafters/codecrafters.yml
-your_program.sh
+.codecrafters/
+codecrafters.yml
 .idea/
