@@ -23,17 +23,26 @@ int main() {
   acceptor.accept(socket);
   std::cout << "Client connected\n";
 
-  asio::streambuf buf;
-  asio::read_until(socket, buf, "\r\n");
+  while (true) {
+    asio::streambuf buf;
+    asio::error_code error;
 
-  std::string request{
-    std::istreambuf_iterator<char>(&buf),
-    std::istreambuf_iterator<char>()
-  };
+    asio::read_until(socket, buf, "\r\n", error);
 
-  if (request.find("PING") != std::string::npos) {
-    asio::write(socket, asio::buffer(std::string("+PONG\r\n")));
+    if (error == asio::error::eof) {
+      std::cout << "Client disconnected\n";
+      break;
+    } if (error) {
+      throw asio::system_error(error);
+    }
+
+    std::string request{
+      std::istreambuf_iterator(&buf),
+      std::istreambuf_iterator<char>()
+    };
+
+    if (request.find("PING") != std::string::npos) {
+      asio::write(socket, asio::buffer(std::string("+PONG\r\n")));
+    }
   }
-
-  return 0;
 }
