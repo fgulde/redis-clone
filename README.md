@@ -1,42 +1,35 @@
 # Redis-Clone in C++
 
-A learning project for building a simple Redis-like key-value store in **C++23**.
+A Redis-compatible server implementation built from scratch in **C++23**,
+developed as part of the [CodeCrafters "Build Your Own Redis"](https://codecrafters.io/challenges/redis) challenge.
 
 ## Goal
 
-This project is intended to explore how a Redis-style in-memory database can be implemented from scratch in C++.  
-The focus is on learning and experimentation, not on replacing Redis.
+This project explores how a Redis-style in-memory database can be implemented from scratch in C++.  
+The focus is on learning and understanding the internals of Redis – not on replacing it.
 
-Planned areas of exploration include:
+Areas of exploration include:
 
-- TCP networking
+- TCP networking & socket programming
+- The RESP (Redis Serialization Protocol) wire format
 - Command parsing
 - In-memory data structures
-- Persistence basics
-- Concurrency
+- Concurrency & event loops
 - Client/server communication
 
 ## Current Status
 
-This repository is in an early development stage.
+Actively in development as part of the CodeCrafters challenge.
 
-At the moment, the project is being set up as a foundation for implementing:
+Already implemented:
+- RESP protocol parsing
+- `PING`, `ECHO`, `SET`, `GET` commands
+- Basic client/server communication
 
-- a lightweight Redis-style server
-- a small command set
-- simple client interactions
-- extensible internal architecture
-
-## Features to Explore
-
-Potential features for this project may include:
-
-- `SET` / `GET`
-- key expiration
-- basic lists or hashes
-- persistence to disk
-- command-line client
-- simple protocol handling
+Planned:
+- Key expiration
+- Persistence to disk
+- Basic lists and hashes
 
 ## Tech Stack
 
@@ -44,11 +37,20 @@ Potential features for this project may include:
 - **Build System:** CMake
 - **Package Management:** vcpkg
 
-## Project Structure
-
-The project is organized as a C++ application built with CMake.  
-Additional source files and modules will be added as the implementation grows.
-
 ## Building
+```bash
+cmake -B build
+cmake --build build
+./build/server
+```
 
-A typical build workflow may look like this:
+You can then connect with any Redis client:
+```bash
+redis-cli ping
+```
+
+## Project Structure
+```
+src/
+└── main.cpp   # Entry point and server logic
+```
