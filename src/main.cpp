@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <vector>
 
 int main() {
   // Flush after every std::cout / std::cerr
@@ -46,12 +47,27 @@ int main() {
   sockaddr_in client_addr{};
   socklen_t client_addr_len = sizeof(client_addr);
   std::cout << "Waiting for a client to connect...\n";
-
   std::cout << "Logs from your program will appear here!\n";
 
-  accept(server_fd, reinterpret_cast<sockaddr *>(&client_addr), &client_addr_len);
+  // Read from client
+  int client_fd = accept(server_fd, reinterpret_cast<sockaddr *>(&client_addr), &client_addr_len);
+  if (client_fd < 0) {
+    std::cerr << "accept failed\n";
+    return 1;
+  }
   std::cout << "Client connected\n";
 
+  std::vector<char> buf(1024);
+  ssize_t bytes_read = read(client_fd, buf.data(), buf.size() - 1);
+  if (bytes_read > 0) {
+    std::string request ( buf.data(), bytes_read );
+    if (request.find("PING") != std::string::npos) {
+      const std::string response = "+PONG\r\n";
+      send(client_fd, response.c_str(), response.size(), 0);
+    }
+  }
+
+  close(client_fd);
   close(server_fd);
 
   return 0;
