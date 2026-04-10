@@ -1,0 +1,29 @@
+//
+// Created by fguld on 4/10/2026.
+//
+
+#include "Server.hpp"
+#include "Connection.hpp"
+#include <iostream>
+
+Server::Server(asio::io_context &io_context, const unsigned short port)
+  : io_context_(io_context)
+  , acceptor_(io_context, tcp::endpoint(tcp::v4(), port)) {}
+
+void Server::run() {
+  do_accept();
+}
+
+// Accept "loop"
+void Server::do_accept() {
+  acceptor_.async_accept(
+    [this](const asio::error_code error, tcp::socket socket) {
+      if (!error) {
+        std::cout << "Client connected\n";
+        std::make_shared<Connection>(std::move(socket))->start();
+      } else {
+        std::cerr << "Accept error: " << error.message() << "\n";
+      }
+      do_accept(); // Accept the next connection
+    });
+}
