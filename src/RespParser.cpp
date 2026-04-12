@@ -4,6 +4,8 @@
 
 #include "RespParser.hpp"
 
+#include <ranges>
+
 static std::optional<std::string> read_line(const std::string_view input, std::size_t& pos) {
   const auto end = input.find("\r\n", pos);
   if (end == std::string_view::npos) return std::nullopt;
@@ -72,10 +74,9 @@ std::optional<RespValue> RespParser::parse_array(const std::string_view input, s
   std::vector<RespValue> elements;
   elements.reserve(count); // Avoid unnecessary reallocations
 
-  // TODO: Improve for loop for more idiomatic C++23 style
-  for (int i = 0; i < count; ++i) {
+  for ([[maybe_unused]] auto _ : std::views::iota(0, count)) {
     auto element = parse_value(input, pos);
-    if (!element) return std::nullopt; // Invalid element
+    if (!element) return std::nullopt;
     elements.push_back(std::move(*element));
   }
 
