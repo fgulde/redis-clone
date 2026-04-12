@@ -5,8 +5,18 @@
 #pragma once
 #include <string>
 
+#include "RespParser.hpp"
+#include "Store.hpp"
+
 class CommandHandler {
 public:
+  explicit CommandHandler(Store& store);
   // Takes a raw Request-String and returns a RESP-Response
-  static std::string handle(std::string_view request);
+  std::string handle(const RespValue& command) const;
+private:
+  static std::string handle_ping(const RespValue& command);
+  std::string handle_set(const RespValue& command) const;
+  std::string handle_get(const RespValue& command) const;
+
+  Store& store_;
 };

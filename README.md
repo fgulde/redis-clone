@@ -22,7 +22,7 @@ Areas of exploration include:
 Actively in development as part of the CodeCrafters challenge.
 
 Already implemented:
-- RESP protocol parsing
+- RESP2 protocol parsing
 - `PING`, `ECHO`, `SET`, `GET` commands
 - Basic client/server communication
 

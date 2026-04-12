@@ -6,8 +6,8 @@
 
 #include <iostream>
 
-Connection::Connection(tcp::socket socket)
-  : socket_(std::move(socket)) {}
+Connection::Connection(tcp::socket socket, Store& store)
+  : socket_(std::move(socket)), store_(store), handler_(store) {}
 
 void Connection::start() {
   do_read();
@@ -34,8 +34,12 @@ void Connection::do_read() {
        std::istreambuf_iterator<char>()
      };
 
-     const std::string response = CommandHandler::handle(request);
-     asio::write(socket_, asio::buffer(response));
+     if (const auto command = parser_.parse(request); !command) {
+        asio::write(socket_, asio::buffer(std::string("-ERR parse error\r\n")));
+     } else {
+        const std::string response = handler_.handle(*command);
+        asio::write(socket_, asio::buffer(response));
+     }
 
      // Recursively call handle_client to read the next request
      do_read();
