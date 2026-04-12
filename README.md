@@ -1,12 +1,11 @@
 # Redis-Clone in C++
 
-A Redis-compatible server implementation built from scratch in **C++23**,
-developed as part of the [CodeCrafters "Build Your Own Redis"](https://codecrafters.io/challenges/redis) challenge.
+A Redis-compatible server implementation built from scratch in **C++23**.
 
 ## Goal
 
 This project explores how a Redis-style in-memory database can be implemented from scratch in C++.  
-The focus is on learning and understanding the internals of Redis – not on replacing it.
+The focus is on learning and understanding the internals of Redis.
 
 Areas of exploration include:
 
@@ -18,8 +17,6 @@ Areas of exploration include:
 - Client/server communication
 
 ## Current Status
-
-Actively in development as part of the CodeCrafters challenge.
 
 Already implemented:
 - RESP2 protocol parsing
@@ -47,6 +44,7 @@ cmake --build build
 You can then connect with any Redis client:
 ```bash
 redis-cli ping
+redis-cli -p 6379
 ```
 
 ## Project Structure
