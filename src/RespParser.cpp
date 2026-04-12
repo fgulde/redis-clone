@@ -24,6 +24,7 @@ std::optional<RespValue> RespParser::parse_value(const std::string_view input, s
 
   switch (input[pos++]) {
     case '*': return parse_array(input, pos);
+    case ':': return parse_integer(input, pos);
     case '$': return parse_bulk_string(input, pos);
     case '+': return parse_simple_string(input, pos);
     default: return std::nullopt; // Invalid type
@@ -35,6 +36,13 @@ std::optional<RespValue> RespParser::parse_simple_string(const std::string_view 
   if (!line) return std::nullopt;
 
   return RespValue{ RespValue::Type::SimpleString, std::move(*line), {} };
+}
+
+std::optional<RespValue> RespParser::parse_integer(const std::string_view input, std::size_t &pos) {
+  auto line = read_line(input, pos);
+  if (!line) return std::nullopt;
+
+  return RespValue{ RespValue::Type::Integer, std::move(*line), {} };
 }
 
 std::optional<RespValue> RespParser::parse_bulk_string(const std::string_view input, std::size_t &pos) {
