@@ -22,5 +22,7 @@ private:
   std::string handle_set(const Command& cmd) const;
   std::string handle_get(const Command& cmd) const;
 
+  static std::optional<std::chrono::milliseconds> parse_expiry(const Command& cmd);
+
   Store& store_;
 };
