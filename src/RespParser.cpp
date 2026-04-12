@@ -72,6 +72,7 @@ std::optional<RespValue> RespParser::parse_array(const std::string_view input, s
   std::vector<RespValue> elements;
   elements.reserve(count); // Avoid unnecessary reallocations
 
+  // TODO: Improve for loop for more idiomatic C++23 style
   for (int i = 0; i < count; ++i) {
     auto element = parse_value(input, pos);
     if (!element) return std::nullopt; // Invalid element

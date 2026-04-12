@@ -6,51 +6,67 @@
 
 CommandHandler::CommandHandler(Store &store) : store_(store) {}
 
-std::string CommandHandler::handle(const RespValue& command) const {
-  if (command.type != RespValue::Type::Array  || command.elements.empty()) {
+Command CommandHandler::parse_command(const RespValue &request) {
+  Command cmd;
+  cmd.type = Command::parse_type(request.elements[0].str);
+  cmd.name = request.elements[0].str;
+
+  cmd.args.reserve(request.elements.size() - 1);
+  for (std::size_t i = 1; i < request.elements.size(); ++i) {
+    cmd.args.push_back(request.elements[i].str);
+  }
+
+  return cmd;
+}
+
+std::string CommandHandler::handle(const RespValue& request) const {
+  if (request.type != RespValue::Type::Array  || request.elements.empty()) {
     return "-ERR invalid command format\r\n";
   }
 
-  const std::string& cmd = command.elements[0].str;
+  const auto cmd = parse_command(request);
 
-  if (cmd == "PING") return handle_ping(command);
-  if (cmd == "ECHO") return handle_echo(command);
-  if (cmd == "SET") return handle_set(command);
-  if (cmd == "GET") return handle_get(command);
+  switch (cmd.type) {
+    case Command::Type::Ping: return handle_ping(cmd);
+    case Command::Type::Echo: return handle_echo(cmd);
+    case Command::Type::Set:  return handle_set(cmd);
+    case Command::Type::Get:  return handle_get(cmd);
+    case Command::Type::Unknown: break;
+  }
 
-  return "-ERR unknown command " + cmd + "\r\n";
+  return "-ERR unknown command " + cmd.name + "\r\n";
 }
 
-std::string CommandHandler::handle_ping(const RespValue &command) {
+std::string CommandHandler::handle_ping(const Command& cmd) {
   // Optional PING message
-  if (command.elements.size() > 1) {
-    const std::string& msg = command.elements[1].str;
+  if (!cmd.args.empty()) {
+    const std::string& msg = cmd.args[0];
     return "$" + std::to_string(msg.size()) + "\r\n" + msg + "\r\n";
   }
   return "+PONG\r\n";
 }
 
-std::string CommandHandler::handle_echo(const RespValue &command) {
-  if (command.elements.size() < 2) {
+std::string CommandHandler::handle_echo(const Command& cmd) {
+  if (cmd.args.empty()) {
     return "-ERR wrong number of arguments for 'ECHO' command\r\n";
   }
-  const std::string& msg = command.elements[1].str;
+  const std::string& msg = cmd.args[0];
   return "$" + std::to_string(msg.size()) + "\r\n" + msg + "\r\n";
 }
 
-std::string CommandHandler::handle_set(const RespValue &command) const {
-  if (command.elements.size() < 3) {
+std::string CommandHandler::handle_set(const Command& cmd) const {
+  if (cmd.args.size() < 2) {
     return "-ERR wrong number of arguments for 'SET' command\r\n";
   }
-  store_.set(command.elements[1].str, command.elements[2].str);
+  store_.set(cmd.args[0], cmd.args[1]);
   return "+OK\r\n";
 }
 
-std::string CommandHandler::handle_get(const RespValue &command) const {
-  if (command.elements.size() < 2) {
+std::string CommandHandler::handle_get(const Command& cmd) const {
+  if (cmd.args.empty()) {
     return "-ERR wrong number of arguments for 'GET' command\r\n";
   }
-  const auto value = store_.get(command.elements[1].str);
+  const auto value = store_.get(cmd.args[0]);
   if (!value) {
     return "$-1\r\n"; // RESP Null bulk string
   }

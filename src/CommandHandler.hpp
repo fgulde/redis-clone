@@ -5,6 +5,7 @@
 #pragma once
 #include <string>
 
+#include "Command.hpp"
 #include "RespParser.hpp"
 #include "Store.hpp"
 
@@ -12,12 +13,14 @@ class CommandHandler {
 public:
   explicit CommandHandler(Store& store);
   // Takes a raw Request-String and returns a RESP-Response
-  std::string handle(const RespValue& command) const;
+  std::string handle(const RespValue& request) const;
 private:
-  static std::string handle_ping(const RespValue& command);
-  static std::string handle_echo(const RespValue& command);
-  std::string handle_set(const RespValue& command) const;
-  std::string handle_get(const RespValue& command) const;
+  static Command parse_command(const RespValue& request);
+
+  static std::string handle_ping(const Command& cmd);
+  static std::string handle_echo(const Command& cmd);
+  std::string handle_set(const Command& cmd) const;
+  std::string handle_get(const Command& cmd) const;
 
   Store& store_;
 };
