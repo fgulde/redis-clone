@@ -9,7 +9,7 @@
 
 
 struct RespValue {
-  enum class Type { SimpleString, BulkString, Array, Null };
+  enum class Type { SimpleString, Integer, BulkString, Array, Null };
 
   Type type{};
   std::string str; // For SimpleString and BulkString
@@ -25,6 +25,7 @@ public:
 private:
   std::optional<RespValue> parse_value(std::string_view input, std::size_t& pos);
   static std::optional<RespValue> parse_simple_string(std::string_view input, std::size_t& pos);
+  static std::optional<RespValue> parse_integer(std::string_view input, std::size_t& pos);
   static std::optional<RespValue> parse_bulk_string(std::string_view input, std::size_t& pos);
   std::optional<RespValue> parse_array(std::string_view input, std::size_t& pos);
 };
