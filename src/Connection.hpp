@@ -11,13 +11,15 @@ using asio::ip::tcp;
 
 class Connection : public std::enable_shared_from_this<Connection> {
 public:
-  explicit Connection(tcp::socket socket);
+  explicit Connection(tcp::socket socket, Store& store);
   void start();
 
 private:
   void do_read();
 
   tcp::socket socket_;
-  asio::streambuf buf_;
+  Store& store_;
   CommandHandler handler_;
+  asio::streambuf buf_;
+  RespParser parser_;
 };

@@ -20,7 +20,7 @@ void Server::do_accept() {
     [this](const asio::error_code error, tcp::socket socket) {
       if (!error) {
         std::cout << "Client connected\n";
-        std::make_shared<Connection>(std::move(socket))->start();
+        std::make_shared<Connection>(std::move(socket), store_)->start();
       } else {
         std::cerr << "Accept error: " << error.message() << "\n";
       }
