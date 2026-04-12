@@ -5,13 +5,23 @@
 #include "Store.hpp"
 
 void Store::set(const std::string_view key, std::string value) {
-  data_[std::string(key)] = std::move(value);
+  data_[std::string(key)] = Entry{ std::move(value), std::nullopt };
 }
 
-std::optional<std::string> Store::get(const std::string_view key) const {
+void Store::set(const std::string_view key, std::string value, const std::chrono::milliseconds ttl) {
+  auto expires_at = Clock::now() + ttl;
+  data_[std::string(key)] = Entry{ std::move(value), expires_at };
+}
+
+std::optional<std::string> Store::get(const std::string_view key) {
   const auto it = data_.find(std::string(key));
   if (it == data_.end()) {
     return std::nullopt;
   }
-  return it->second;
+  if (it->second.expires_at && Clock::now() > *it->second.expires_at) {
+    data_.erase(it);
+    return std::nullopt; // Entry has expired
+  }
+
+  return it->second.value;
 }

@@ -58,7 +58,18 @@ std::string CommandHandler::handle_set(const Command& cmd) const {
   if (cmd.args.size() < 2) {
     return "-ERR wrong number of arguments for 'SET' command\r\n";
   }
-  store_.set(cmd.args[0], cmd.args[1]);
+
+  const auto ttl = parse_expiry(cmd);
+  if (ttl && ttl->count() <= 0) {
+    return "-ERR invalid expire time in 'SET' command\r\n";
+  }
+
+  if (ttl) {
+    store_.set(cmd.args[0], cmd.args[1], *ttl);
+  } else {
+    store_.set(cmd.args[0], cmd.args[1]);
+  }
+
   return "+OK\r\n";
 }
 
@@ -71,4 +82,20 @@ std::string CommandHandler::handle_get(const Command& cmd) const {
     return "$-1\r\n"; // RESP Null bulk string
   }
   return "$" + std::to_string(value->size()) + "\r\n" + *value + "\r\n";
+}
+
+std::optional<std::chrono::milliseconds> CommandHandler::parse_expiry(const Command &cmd) {
+  for (std::size_t i = 2; i + 1 < cmd.args.size(); i += 2) {
+    const auto option = string_utils::lowercase(cmd.args[i]);
+
+    if (option == "ex") {
+      const long long seconds = std::stoll(cmd.args[i + 1]);
+      return std::chrono::milliseconds(seconds * 1000);
+    }
+    if (option == "px") {
+      const long long milliseconds = std::stoll(cmd.args[i + 1]);
+      return std::chrono::milliseconds(milliseconds);
+    }
+  }
+  return std::nullopt;
 }

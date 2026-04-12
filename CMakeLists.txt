@@ -22,7 +22,9 @@ add_executable(redis
         src/Store.hpp
         src/RespParser.cpp
         src/RespParser.hpp
-        src/Command.hpp)
+        src/Command.hpp
+        src/StringUtils.hpp
+)
 
 target_link_libraries(redis PRIVATE asio asio::asio)
 target_link_libraries(redis PRIVATE Threads::Threads)
