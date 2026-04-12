@@ -14,6 +14,7 @@ std::string CommandHandler::handle(const RespValue& command) const {
   const std::string& cmd = command.elements[0].str;
 
   if (cmd == "PING") return handle_ping(command);
+  if (cmd == "ECHO") return handle_echo(command);
   if (cmd == "SET") return handle_set(command);
   if (cmd == "GET") return handle_get(command);
 
@@ -27,6 +28,14 @@ std::string CommandHandler::handle_ping(const RespValue &command) {
     return "$" + std::to_string(msg.size()) + "\r\n" + msg + "\r\n";
   }
   return "+PONG\r\n";
+}
+
+std::string CommandHandler::handle_echo(const RespValue &command) {
+  if (command.elements.size() < 2) {
+    return "-ERR wrong number of arguments for 'ECHO' command\r\n";
+  }
+  const std::string& msg = command.elements[1].str;
+  return "$" + std::to_string(msg.size()) + "\r\n" + msg + "\r\n";
 }
 
 std::string CommandHandler::handle_set(const RespValue &command) const {

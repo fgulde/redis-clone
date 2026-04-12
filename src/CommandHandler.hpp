@@ -15,6 +15,7 @@ public:
   std::string handle(const RespValue& command) const;
 private:
   static std::string handle_ping(const RespValue& command);
+  static std::string handle_echo(const RespValue& command);
   std::string handle_set(const RespValue& command) const;
   std::string handle_get(const RespValue& command) const;
 
