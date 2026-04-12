@@ -2,6 +2,8 @@
 #include <asio.hpp>
 #include "Server.hpp"
 
+// TODO: Make src more organized
+// TODO: Add Doxygen Documentation
 int main() {
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
