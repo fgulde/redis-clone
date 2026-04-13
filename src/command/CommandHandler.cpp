@@ -42,6 +42,7 @@ std::string CommandHandler::handle(const RespValue& request) const {
     case Command::Type::LPush: return handle_lpush(cmd);
     case Command::Type::LRange: return handle_lrange(cmd);
     case Command::Type::LLen: return handle_llen(cmd);
+    case Command::Type::LPop: return handle_lpop(cmd);
     case Command::Type::Unknown: break;
   }
 
@@ -131,6 +132,32 @@ std::string CommandHandler::handle_llen(const Command &cmd) const {
   const std::string& key = cmd.args[0];
   const std::size_t length = store_.llen(key);
   return ":" + std::to_string(length) + "\r\n";
+}
+
+std::string CommandHandler::handle_lpop(const Command &cmd) const {
+  if (auto err = check_args(cmd, 1)) return *err;
+
+  const std::string& key = cmd.args[0];
+  // Optional count argument (default 1)
+  const std::size_t count = (cmd.args.size() >= 2) ? std::stoull(cmd.args[1]) : 1;
+
+  const auto values = store_.lpop(key, count);
+  if (!values) {
+    return "$-1\r\n"; // RESP Null bulk string – key does not exist
+  }
+
+  // If count was not explicitly given, return a single bulk string instead of an array
+  if (cmd.args.size() < 2) {
+    const auto& val = values->front();
+    return "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
+  }
+
+  // Otherwise return a RESP array
+  std::string response = "*" + std::to_string(values->size()) + "\r\n";
+  for (const auto& val : *values) {
+    response += "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
+  }
+  return response;
 }
 
 std::optional<std::chrono::milliseconds> CommandHandler::parse_expiry(const Command &cmd) {
