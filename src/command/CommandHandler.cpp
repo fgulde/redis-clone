@@ -31,6 +31,7 @@ std::string CommandHandler::handle(const RespValue& request) const {
     case Command::Type::Echo: return handle_echo(cmd);
     case Command::Type::Set:  return handle_set(cmd);
     case Command::Type::Get:  return handle_get(cmd);
+    case Command::Type::RPush: return handle_rpush(cmd);
     case Command::Type::Unknown: break;
   }
 
@@ -82,6 +83,18 @@ std::string CommandHandler::handle_get(const Command& cmd) const {
     return "$-1\r\n"; // RESP Null bulk string
   }
   return "$" + std::to_string(value->size()) + "\r\n" + *value + "\r\n";
+}
+
+std::string CommandHandler::handle_rpush(const Command &cmd) const {
+  if (cmd.args.size() < 2) {
+    return "-ERR wrong number of arguments for 'RPUSH' command\r\n";
+  }
+
+  const std::string& key = cmd.args[0];
+  const std::vector values(cmd.args.begin() + 1, cmd.args.end());
+
+  const std::size_t length = store_.rpush(key, values);
+  return ":" + std::to_string(length) + "\r\n";
 }
 
 std::optional<std::chrono::milliseconds> CommandHandler::parse_expiry(const Command &cmd) {
