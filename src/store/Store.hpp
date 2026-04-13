@@ -36,6 +36,15 @@ public:
    */
   std::size_t rpush(std::string_view key, const std::vector<std::string>& values);
 
+  /**
+       * @brief Returns a subrange of the list stored at key.
+       * @param start Start index (inclusive).
+       * @param stop  Stop index (inclusive).
+       * @return The requested elements, or an empty vector if the key does not exist,
+       *         start >= list size, or start > stop.
+       */
+  std::vector<std::string> lrange(std::string_view key, long long start, long long stop) const;
+
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
   using TimePoint = Clock::time_point; ///< Represents the expiration time of an entry
