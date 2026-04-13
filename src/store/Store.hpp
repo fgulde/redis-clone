@@ -51,6 +51,8 @@ public:
    */
   std::vector<std::string> lrange(std::string_view key, long long start, long long stop) const;
 
+  std::size_t llen(std::string_view key) const;
+
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
   using TimePoint = Clock::time_point; ///< Represents the expiration time of an entry

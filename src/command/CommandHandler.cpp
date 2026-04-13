@@ -41,6 +41,7 @@ std::string CommandHandler::handle(const RespValue& request) const {
     case Command::Type::RPush: return handle_rpush(cmd);
     case Command::Type::LPush: return handle_lpush(cmd);
     case Command::Type::LRange: return handle_lrange(cmd);
+    case Command::Type::LLen: return handle_llen(cmd);
     case Command::Type::Unknown: break;
   }
 
@@ -122,6 +123,14 @@ std::string CommandHandler::handle_lrange(const Command &cmd) const {
     response += "$" + std::to_string(value.size()) + "\r\n" + value + "\r\n";
   }
   return response;
+}
+
+std::string CommandHandler::handle_llen(const Command &cmd) const {
+  if (auto err = check_args(cmd, 1)) return *err;
+
+  const std::string& key = cmd.args[0];
+  const std::size_t length = store_.llen(key);
+  return ":" + std::to_string(length) + "\r\n";
 }
 
 std::optional<std::chrono::milliseconds> CommandHandler::parse_expiry(const Command &cmd) {
