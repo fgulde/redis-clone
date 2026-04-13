@@ -97,6 +97,16 @@ std::string CommandHandler::handle_rpush(const Command &cmd) const {
   return ":" + std::to_string(length) + "\r\n";
 }
 
+std::string CommandHandler::handle_lpush(const Command &cmd) const {
+  if (auto err = check_args(cmd, 2)) return *err;
+
+  const std::string& key = cmd.args[0];
+  const std::vector values(cmd.args.begin() + 1, cmd.args.end());
+
+  const std::size_t length = store_.lpush(key, values);
+  return ":" + std::to_string(length) + "\r\n";
+}
+
 std::string CommandHandler::handle_lrange(const Command &cmd) const {
   if (auto err = check_args(cmd, 3)) return *err;
 
