@@ -22,6 +22,11 @@ private:
   std::string handle_set(const Command& cmd) const;
   std::string handle_get(const Command& cmd) const;
 
+  /**
+   * @brief Parses optional expiry from a SET command.
+   * @return Expiry duration, or std::nullopt if no expiry flag was given.
+   * @note Supports EX (seconds) and PX (milliseconds) flags.
+   */
   static std::optional<std::chrono::milliseconds> parse_expiry(const Command& cmd);
 
   Store& store_;
