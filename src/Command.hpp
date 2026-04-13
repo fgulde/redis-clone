@@ -17,7 +17,7 @@ struct Command {
   std::string name;
   std::vector<std::string> args;
 
-  static Type parse_type(std::string_view name) {
+  static Type parse_type(const std::string_view name) {
     const auto lower = string_utils::lowercase(name);
 
     if (lower == "ping") return Type::Ping;

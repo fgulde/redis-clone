@@ -17,7 +17,7 @@ public:
 private:
   void do_accept();
 
-  Store store_;
-  asio::io_context& io_context_;
-  tcp::acceptor acceptor_;
+  Store store_; ///< Shared store for all connections
+  asio::io_context& io_context_; ///< Reference to the io_context, which handles all operations
+  tcp::acceptor acceptor_; ///< Listens and accepts incoming TCP connections
 };
