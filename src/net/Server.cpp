@@ -2,9 +2,10 @@
 // Created by fguld on 4/10/2026.
 //
 
-#include "Server.hpp"
-#include "Connection.hpp"
 #include <iostream>
+
+#include "Server.hpp"
+#include "../net/Connection.hpp"
 
 Server::Server(asio::io_context &io_context, const unsigned short port)
   : io_context_(io_context)

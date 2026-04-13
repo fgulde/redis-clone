@@ -12,18 +12,19 @@ find_package(asio CONFIG REQUIRED)
 
 add_executable(redis
         src/main.cpp
-        src/CommandHandler.cpp
-        src/CommandHandler.hpp
-        src/Connection.cpp
-        src/Connection.hpp
-        src/Server.cpp
-        src/Server.hpp
-        src/Store.cpp
-        src/Store.hpp
-        src/RespParser.cpp
-        src/RespParser.hpp
-        src/Command.hpp
-        src/StringUtils.hpp
+        src/command/CommandHandler.cpp
+        src/command/CommandHandler.hpp
+        src/net/Connection.cpp
+        src/net/Connection.hpp
+        src/net/Server.cpp
+        src/net/Server.hpp
+        src/store/Store.cpp
+        src/store/Store.hpp
+        src/resp/RespParser.cpp
+        src/resp/RespParser.hpp
+        src/command/Command.hpp
+        src/util/StringUtils.hpp
+        src/resp/RespValue.hpp
 )
 
 target_link_libraries(redis PRIVATE asio asio::asio)

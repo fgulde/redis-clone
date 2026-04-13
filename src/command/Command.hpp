@@ -3,12 +3,11 @@
 //
 
 #pragma once
-#include <algorithm>
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include "StringUtils.hpp"
+#include "../util/StringUtils.hpp"
 
 struct Command {
   enum class Type { Ping, Echo, Set, Get, Unknown };
