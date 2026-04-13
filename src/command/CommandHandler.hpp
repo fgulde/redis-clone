@@ -17,6 +17,7 @@ public:
   std::string handle(const RespValue& request) const;
 private:
   static Command parse_command(const RespValue& request);
+  static std::optional<std::string> check_args(const Command& cmd, std::size_t min_args);
 
   static std::string handle_ping(const Command& cmd);
   static std::string handle_echo(const Command& cmd);
