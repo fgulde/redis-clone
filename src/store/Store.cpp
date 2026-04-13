@@ -25,3 +25,11 @@ std::optional<std::string> Store::get(const std::string_view key) {
 
   return it->second.value;
 }
+
+std::size_t Store::rpush(const std::string_view key, const std::vector<std::string> &values) {
+  auto& list = lists_[std::string(key)];
+  for (const auto& value : values) {
+    list.push_back(value);
+  }
+  return list.size();
+}

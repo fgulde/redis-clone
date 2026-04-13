@@ -22,6 +22,7 @@ private:
   static std::string handle_echo(const Command& cmd);
   std::string handle_set(const Command& cmd) const;
   std::string handle_get(const Command& cmd) const;
+  std::string handle_rpush(const Command& cmd) const;
 
   /**
    * @brief Parses optional expiry from a SET command.

@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <optional>
 #include <chrono>
+#include <deque>
 
 class Store {
 public:
@@ -29,6 +30,12 @@ public:
    */
   std::optional<std::string> get(std::string_view key);
 
+  /**
+   * @brief Appends values to a list stored at key. If the key does not exist, it is created as an empty list before appending.
+   * @return The length of the list after the push operation.
+   */
+  std::size_t rpush(std::string_view key, const std::vector<std::string>& values);
+
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
   using TimePoint = Clock::time_point; ///< Represents the expiration time of an entry
@@ -39,4 +46,7 @@ private:
   };
 
   std::unordered_map<std::string, Entry> data_; ///< Main storage for key-value pairs, with optional expiration
+
+  /// Main storage for list values. Uses std::deque instead of std::vector for efficient push_front operations
+  std::unordered_map<std::string, std::deque<std::string>> lists_;
 };
