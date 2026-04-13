@@ -24,6 +24,7 @@ private:
   std::string handle_set(const Command& cmd) const;
   std::string handle_get(const Command& cmd) const;
   std::string handle_rpush(const Command& cmd) const;
+  std::string handle_lpush(const Command& cmd) const;
   std::string handle_lrange(const Command& cmd) const;
 
   /**

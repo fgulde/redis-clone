@@ -37,12 +37,18 @@ public:
   std::size_t rpush(std::string_view key, const std::vector<std::string>& values);
 
   /**
-       * @brief Returns a subrange of the list stored at key.
-       * @param start Start index (can be negative).
-       * @param stop  Stop index (can be negative).
-       * @return The requested elements, or an empty vector if the key does not exist,
-       *         start >= list size, or start > stop.
-       */
+   * @brief Prepends values to a list stored at key. If the key does not exist, it is created as an empty list before prepending.
+   * @return The length of the list after the push operation.
+   */
+  std::size_t lpush(std::string_view key, const std::vector<std::string>& values);
+
+  /**
+   * @brief Returns a subrange of the list stored at key.
+   * @param start Start index (can be negative).
+   * @param stop  Stop index (can be negative).
+   * @return The requested elements, or an empty vector if the key does not exist,
+   *         start >= list size, or start > stop.
+   */
   std::vector<std::string> lrange(std::string_view key, long long start, long long stop) const;
 
 private:
