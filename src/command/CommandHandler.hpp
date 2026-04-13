@@ -6,8 +6,9 @@
 #include <string>
 
 #include "Command.hpp"
-#include "RespParser.hpp"
-#include "Store.hpp"
+#include "../resp/RespParser.hpp"
+#include "../resp/RespValue.hpp"
+#include "../store/Store.hpp"
 
 class CommandHandler {
 public:

@@ -5,7 +5,7 @@
 #pragma once
 #include <asio.hpp>
 #include <memory>
-#include "CommandHandler.hpp"
+#include "../command/CommandHandler.hpp"
 
 using asio::ip::tcp;
 

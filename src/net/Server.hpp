@@ -5,7 +5,7 @@
 #pragma once
 #include <asio.hpp>
 
-#include "Store.hpp"
+#include "../store/Store.hpp"
 
 using asio::ip::tcp;
 
