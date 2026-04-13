@@ -38,8 +38,8 @@ public:
 
   /**
        * @brief Returns a subrange of the list stored at key.
-       * @param start Start index (inclusive).
-       * @param stop  Stop index (inclusive).
+       * @param start Start index (can be negative).
+       * @param stop  Stop index (can be negative).
        * @return The requested elements, or an empty vector if the key does not exist,
        *         start >= list size, or start > stop.
        */

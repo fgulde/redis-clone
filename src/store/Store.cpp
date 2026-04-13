@@ -34,12 +34,16 @@ std::size_t Store::rpush(const std::string_view key, const std::vector<std::stri
   return list.size();
 }
 
-std::vector<std::string> Store::lrange(const std::string_view key, const long long start, const long long stop) const {
+std::vector<std::string> Store::lrange(const std::string_view key, long long start, long long stop) const {
   const auto it = lists_.find(std::string(key));
   if (it == lists_.end()) return {};
 
   const auto& list = it->second;
   const auto size = static_cast<long long>(list.size());
+
+  // Resolve negative indices: -1 = last element, -2 = second to last, etc.
+  if (start < 0) start = std::max(0LL, start + size);
+  if (stop  < 0) stop  = stop + size;
 
   if (start >= size || start > stop) return {};
 
