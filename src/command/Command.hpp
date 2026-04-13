@@ -10,7 +10,7 @@
 #include "../util/StringUtils.hpp"
 
 struct Command {
-  enum class Type { Ping, Echo, Set, Get, RPush, LPush, LRange, Unknown };
+  enum class Type { Ping, Echo, Set, Get, RPush, LPush, LRange, LLen, Unknown };
 
   Type type{ Type::Unknown };
   std::string name; ///< Original command name (e.g., "PING", "ECHO", etc.), used for error messages
@@ -26,6 +26,7 @@ struct Command {
     if (lower == "rpush") return Type::RPush;
     if (lower == "lpush") return Type::LPush;
     if (lower == "lrange") return Type::LRange;
+    if (lower == "llen") return Type::LLen;
     return Type::Unknown;
   }
 };

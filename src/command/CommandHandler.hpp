@@ -26,6 +26,7 @@ private:
   std::string handle_rpush(const Command& cmd) const;
   std::string handle_lpush(const Command& cmd) const;
   std::string handle_lrange(const Command& cmd) const;
+  std::string handle_llen(const Command& cmd) const;
 
   /**
    * @brief Parses optional expiry from a SET command.
