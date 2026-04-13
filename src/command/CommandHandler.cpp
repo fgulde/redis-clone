@@ -19,6 +19,13 @@ Command CommandHandler::parse_command(const RespValue &request) {
   return cmd;
 }
 
+std::optional<std::string> CommandHandler::check_args(const Command &cmd, const std::size_t min_args) {
+  if (cmd.args.size() < min_args) {
+    return "-ERR wrong number of arguments for '" + cmd.name + "' command\r\n";
+  }
+  return std::nullopt;
+}
+
 std::string CommandHandler::handle(const RespValue& request) const {
   if (request.type != RespValue::Type::Array  || request.elements.empty()) {
     return "-ERR invalid command format\r\n";
@@ -49,17 +56,13 @@ std::string CommandHandler::handle_ping(const Command& cmd) {
 }
 
 std::string CommandHandler::handle_echo(const Command& cmd) {
-  if (cmd.args.empty()) {
-    return "-ERR wrong number of arguments for 'ECHO' command\r\n";
-  }
+  if (auto err = check_args(cmd, 1)) return *err;
   const std::string& msg = cmd.args[0];
   return "$" + std::to_string(msg.size()) + "\r\n" + msg + "\r\n";
 }
 
 std::string CommandHandler::handle_set(const Command& cmd) const {
-  if (cmd.args.size() < 2) {
-    return "-ERR wrong number of arguments for 'SET' command\r\n";
-  }
+  if (auto err = check_args(cmd, 2)) return *err;
 
   const auto ttl = parse_expiry(cmd);
   if (ttl && ttl->count() <= 0) {
@@ -76,9 +79,7 @@ std::string CommandHandler::handle_set(const Command& cmd) const {
 }
 
 std::string CommandHandler::handle_get(const Command& cmd) const {
-  if (cmd.args.empty()) {
-    return "-ERR wrong number of arguments for 'GET' command\r\n";
-  }
+  if (auto err = check_args(cmd, 1)) return *err;
   const auto value = store_.get(cmd.args[0]);
   if (!value) {
     return "$-1\r\n"; // RESP Null bulk string
@@ -87,9 +88,7 @@ std::string CommandHandler::handle_get(const Command& cmd) const {
 }
 
 std::string CommandHandler::handle_rpush(const Command &cmd) const {
-  if (cmd.args.size() < 2) {
-    return "-ERR wrong number of arguments for 'RPUSH' command\r\n";
-  }
+  if (auto err = check_args(cmd, 2)) return *err;
 
   const std::string& key = cmd.args[0];
   const std::vector values(cmd.args.begin() + 1, cmd.args.end());
@@ -99,9 +98,7 @@ std::string CommandHandler::handle_rpush(const Command &cmd) const {
 }
 
 std::string CommandHandler::handle_lrange(const Command &cmd) const {
-  if (cmd.args.size() < 3) {
-    return "-ERR wrong number of arguments for 'LRANGE' command\r\n";
-  }
+  if (auto err = check_args(cmd, 3)) return *err;
 
   const std::string& key = cmd.args[0];
   const long long start = std::stoll(cmd.args[1]);
