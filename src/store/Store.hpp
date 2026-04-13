@@ -53,6 +53,13 @@ public:
 
   std::size_t llen(std::string_view key) const;
 
+  /**
+   * @brief Removes and returns up to `count` elements from the front of the list.
+   * @return The removed elements, or std::nullopt if the key does not exist.
+   *         If count exceeds the list size, all elements are removed and returned.
+   */
+  std::optional<std::vector<std::string>> lpop(std::string_view key, std::size_t count = 1);
+
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
   using TimePoint = Clock::time_point; ///< Represents the expiration time of an entry

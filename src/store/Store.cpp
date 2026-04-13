@@ -60,8 +60,25 @@ std::vector<std::string> Store::lrange(const std::string_view key, long long sta
   return { list.begin() + start, list.begin() + clamped_stop + 1 };
 }
 
-std::size_t Store::llen(std::string_view key) const {
+std::size_t Store::llen(const std::string_view key) const {
   const auto it = lists_.find(std::string(key));
   if (it == lists_.end()) return 0;
   return it->second.size();
+}
+
+std::optional<std::vector<std::string>> Store::lpop(const std::string_view key, const std::size_t count) {
+  const auto it = lists_.find(std::string(key));
+  if (it == lists_.end()) return std::nullopt;
+
+  auto& list = it->second;
+  const std::size_t n = std::min(count, list.size());
+
+  std::vector result(list.begin(), list.begin() + static_cast<std::ptrdiff_t>(n));
+  list.erase(list.begin(), list.begin() + static_cast<std::ptrdiff_t>(n));
+
+  if (list.empty()) {
+    lists_.erase(it);
+  }
+
+  return result;
 }
