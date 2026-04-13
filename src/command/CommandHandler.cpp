@@ -39,6 +39,7 @@ std::string CommandHandler::handle(const RespValue& request) const {
     case Command::Type::Set:  return handle_set(cmd);
     case Command::Type::Get:  return handle_get(cmd);
     case Command::Type::RPush: return handle_rpush(cmd);
+    case Command::Type::LPush: return handle_lpush(cmd);
     case Command::Type::LRange: return handle_lrange(cmd);
     case Command::Type::Unknown: break;
   }
