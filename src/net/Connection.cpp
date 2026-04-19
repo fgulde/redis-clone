@@ -6,8 +6,9 @@
 
 #include <iostream>
 
-Connection::Connection(tcp::socket socket, Store& store)
-  : socket_(std::move(socket)), store_(store), handler_(store) {}
+Connection::Connection(tcp::socket socket, Store &store)
+  : socket_(std::move(socket)), store_(store), handler_(store) {
+}
 
 void Connection::start() {
   do_read();
@@ -19,30 +20,37 @@ void Connection::do_read() {
   auto self = shared_from_this();
 
   asio::async_read_until(socket_, buf_, "\r\n",
-    // Completion Handler
-   [this, self](const asio::error_code error, std::size_t /*bytes_transferred*/) {
-     if (error == asio::error::eof) {
-       std::cout << "Client disconnected\n";
-       return;
-     }
-     if (error) {
-       std::cerr << "Read error: " << error.message() << "\n";
-       return;
-     }
+  // Completion Handler
+  // ReSharper disable once CppLambdaCaptureNeverUsed
+  [this, self](const asio::error_code error, std::size_t /*bytes_transferred*/) {
+  if (error == asio::error::eof) {
+    std::cout << "Client disconnected\n";
+    return;
+  }
+  if (error) {
+    std::cerr << "Read error: " << error.message() << "\n";
+    return;
+  }
 
-     const std::string request{
-       std::istreambuf_iterator(&buf_),
-       std::istreambuf_iterator<char>()
-     };
+  // Convert the buffer to a string for parsing
+  const std::string request{
+    std::istreambuf_iterator(&buf_),
+    std::istreambuf_iterator<char>()
+  };
 
-     if (const auto command = parser_.parse(request); !command) {
-        asio::write(socket_, asio::buffer(std::string("-ERR parse error\r\n")));
-     } else {
-        const std::string response = handler_.handle(*command);
-        asio::write(socket_, asio::buffer(response));
-     }
+  // Parse the string to a RespValue
+  // ReSharper disable once CppTooWideScopeInitStatement
+  const auto command = parser_.parse(request);
 
-     // Recursively call handle_client to read the next request
-     do_read();
-   });
+  if (!command) {
+    asio::write(socket_, asio::buffer(std::string("-ERR parse error\r\n")));
+  } else {
+    // Process the RespValue to a Command and handle it
+    const std::string response = handler_.handle(*command);
+    asio::write(socket_, asio::buffer(response)); // Send the response back to the client
+  }
+
+  // Recursively call handle_client to read the next request
+    do_read();
+  });
 }

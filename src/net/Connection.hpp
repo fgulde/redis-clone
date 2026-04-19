@@ -19,7 +19,7 @@ using asio::ip::tcp;
 class Connection : public std::enable_shared_from_this<Connection> {
 public:
   explicit Connection(tcp::socket socket, Store& store);
-  void start();
+  void start(); /// Public wrapper method for calling do_read()
 
 private:
   void do_read();

@@ -6,6 +6,13 @@
 
 #include <ranges>
 
+/**
+ * Helper function to read a line terminated by \r\n from the input string, starting at the given position.
+ * It updates the position pointer to point after the line, allowing for sequential parsing of the input string.
+ * @param input Input string to parse
+ * @param pos Current position in the input string (will be updated to point after the line)
+ * @return The line read from the input, or std::nullopt if no complete line is available
+ */
 static std::optional<std::string> read_line(const std::string_view input, std::size_t& pos) {
   const auto end = input.find("\r\n", pos);
   if (end == std::string_view::npos) return std::nullopt;
@@ -63,10 +70,10 @@ std::optional<RespValue> RespParser::parse_bulk_string(const std::string_view in
 }
 
 std::optional<RespValue> RespParser::parse_array(const std::string_view input, std::size_t &pos) {
-  const auto line = read_line(input, pos);
+  const auto line = read_line(input, pos); // Read the array length
   if (!line) return std::nullopt;
 
-  const int count = std::stoi(*line);
+  const int count = std::stoi(*line); // Convert array length to an integer
   if (count == -1) {
     return RespValue{ RespValue::Type::Null, {}, {} };
   }
