@@ -27,7 +27,7 @@ std::optional<std::string> CommandHandler::check_args(const Command &cmd, const 
 }
 
 std::string CommandHandler::handle(const RespValue& request) const {
-  if (request.type != RespValue::Type::Array  || request.elements.empty()) {
+  if ((request.type != RespValue::Type::Array)  || request.elements.empty()) {
     return "-ERR invalid command format\r\n";
   }
 

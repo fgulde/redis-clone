@@ -16,7 +16,7 @@ void Connection::start() {
 // Client handling "loop"
 void Connection::do_read() {
   // Capture the shared_ptr to keep the Connection alive until the async operation completes
-  [[maybe_unused]] auto self = shared_from_this();
+  auto self = shared_from_this();
 
   asio::async_read_until(socket_, buf_, "\r\n",
     // Completion Handler

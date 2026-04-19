@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.13)
 
 project(redis-starter-cpp)
 
-file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
-
-set(CMAKE_CXX_STANDARD 23) # Enable the C++23 standard
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package(Threads REQUIRED)
@@ -27,5 +24,18 @@ add_executable(redis
         src/resp/RespValue.hpp
 )
 
-target_link_libraries(redis PRIVATE asio asio::asio)
+set_target_properties(redis PROPERTIES
+        CXX_STANDARD 23
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+)
+
+target_compile_options(redis PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Werror
+)
+
+target_link_libraries(redis PRIVATE asio::asio)
 target_link_libraries(redis PRIVATE Threads::Threads)
