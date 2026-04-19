@@ -9,6 +9,10 @@
 
 #include "../util/StringUtils.hpp"
 
+/**
+ * Lightweight struct to represent a parsed command, including its type, original name, and arguments.
+ * It includes a static method to parse its own type from the command name.
+ */
 struct Command {
   enum class Type { Ping, Echo, Set, Get, RPush, LPush, LRange, LLen, LPop, Unknown };
 
@@ -16,6 +20,7 @@ struct Command {
   std::string name; ///< Original command name (e.g., "PING", "ECHO", etc.), used for error messages
   std::vector<std::string> args;
 
+  /// Parses the command type from the command name, case-insensitively.
   static Type parse_type(const std::string_view name) {
     const auto lower = string_utils::lowercase(name);
 

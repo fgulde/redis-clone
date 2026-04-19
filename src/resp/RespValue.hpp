@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 
+/**
+ * Bundles the transferred RESP2 message in a processable object
+ **/
 struct RespValue {
   enum class Type { SimpleString, Integer, BulkString, Array, Null };
 

@@ -10,24 +10,40 @@
 #include "../resp/RespValue.hpp"
 #include "../store/Store.hpp"
 
+/**
+ * CommandHandler is responsible for processing incoming RESP requests in the form of RespValue objects,
+ * executing the corresponding commands on the Store, and generating appropriate RESP responses.
+ */
 class CommandHandler {
 public:
   explicit CommandHandler(Store& store);
-  // Takes a raw Request-String and returns a RESP-Response
-  std::string handle(const RespValue& request) const;
+  /// Takes a RespValue, parses the command, executes it, and returns a RESP-Response
+  [[nodiscard]] std::string handle(const RespValue& request) const;
 private:
+  /**
+   * @brief Parses a RESP array request into a Command struct.
+   * @param request Current command request as a RespValue (expected to be an array with the command name followed by arguments).
+   * @return Parsed Command struct containing the command type, name, and arguments.
+   */
   static Command parse_command(const RespValue& request);
+
+  /**
+   * Helper function to check if a command has at least the required number of arguments.
+   * @param cmd Command to check
+   * @param min_args Minimum number of arguments required for the command (not counting the command name itself).
+   * @return std::nullopt if the command satisfies the argument count requirement, or an error message string if it does not.
+   */
   static std::optional<std::string> check_args(const Command& cmd, std::size_t min_args);
 
   static std::string handle_ping(const Command& cmd);
   static std::string handle_echo(const Command& cmd);
-  std::string handle_set(const Command& cmd) const;
-  std::string handle_get(const Command& cmd) const;
-  std::string handle_rpush(const Command& cmd) const;
-  std::string handle_lpush(const Command& cmd) const;
-  std::string handle_lrange(const Command& cmd) const;
-  std::string handle_llen(const Command& cmd) const;
-  std::string handle_lpop(const Command& cmd) const;
+  [[nodiscard]] std::string handle_set(const Command& cmd) const;
+  [[nodiscard]] std::string handle_get(const Command& cmd) const;
+  [[nodiscard]] std::string handle_rpush(const Command& cmd) const;
+  [[nodiscard]] std::string handle_lpush(const Command& cmd) const;
+  [[nodiscard]] std::string handle_lrange(const Command& cmd) const;
+  [[nodiscard]] std::string handle_llen(const Command& cmd) const;
+  [[nodiscard]] std::string handle_lpop(const Command& cmd) const;
 
   /**
    * @brief Parses optional expiry from a SET command.
