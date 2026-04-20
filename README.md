@@ -47,17 +47,24 @@ Planned:
 - **Build System:** CMake
 - **Package Management:** vcpkg
 - **Networking:** Asio (standalone)
+- **Testing:** Google Test (GTest)
 
 ## Building
+To build and run the server locally, you can use the provided script:
 ```bash
-cmake -B build
-cmake --build build
-./build/server
+./program.sh
 ```
+
 You can then connect with any Redis client:
-``` bash
+```bash
 redis-cli ping
 redis-cli -p 6379
+```
+
+## Testing
+To build and run the test suite (using GTest and CTest), use:
+```bash
+./run_tests.sh
 ```
 ## Project Structure
 ```
