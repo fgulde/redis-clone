@@ -6,6 +6,8 @@
 
 #include <iostream>
 
+inline bool g_logging_enabled = true;
+
 Connection::Connection(tcp::socket socket, Store &store)
   : socket_(std::move(socket)), store_(store), handler_(store) {
 }
@@ -24,7 +26,7 @@ void Connection::do_read() {
   // ReSharper disable once CppLambdaCaptureNeverUsed
   [this, self](const asio::error_code error, std::size_t /*bytes_transferred*/) {
   if (error == asio::error::eof) {
-    std::cout << "Client disconnected\n";
+    if (g_logging_enabled) std::cout << "Client disconnected\n";
     return;
   }
   if (error) {

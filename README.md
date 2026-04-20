@@ -1,5 +1,7 @@
 # Redis-Clone in C++
 
+![CI](https://github.com/fgulde/redis-clone/actions/workflows/ci.yml/badge.svg)
+
 A Redis-compatible server implementation built from scratch in **C++23**.
 
 ## Goal
@@ -21,14 +23,23 @@ Areas of exploration include:
 Already implemented:
 - RESP2 protocol parsing (`SimpleString`, `BulkString`, `Integer`, `Array`, `Null`)
 - `PING`, `ECHO`, `SET`, `GET` commands
+- List commands (`RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`)
 - Key expiration via `EX` (seconds) and `PX` (milliseconds) flags on `SET`
 - Lazy deletion of expired keys on access
 - Async TCP server with per-client connections (`asio`)
 - Modular architecture (networking, RESP parsing, command handling, storage)
 
 Planned:
-- Persistence to disk
-- Basic lists and hashes
+- RDB Persistence
+- AOF Persistence
+- Streams
+- Transactions
+- Replication
+- Pub/Sub
+- Sorted Sets
+- Geospatial commands
+- Authentication
+- Optimistic locking
 
 ## Tech Stack
 

@@ -20,6 +20,8 @@ public:
   Server(asio::io_context& io_context, unsigned short port);
   void run(); /// Public wrapper method for calling do_accept()
 
+  unsigned short port() const { return acceptor_.local_endpoint().port(); }
+
 private:
   void do_accept();
 
