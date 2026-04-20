@@ -7,6 +7,8 @@
 #include "Server.hpp"
 #include "../net/Connection.hpp"
 
+inline bool g_logging_enabled = true;
+
 Server::Server(asio::io_context &io_context, const unsigned short port)
   : io_context_(io_context)
   , acceptor_(io_context, tcp::endpoint(tcp::v4(), port)) {}
@@ -20,7 +22,7 @@ void Server::do_accept() {
   acceptor_.async_accept(
     [this](const asio::error_code error, tcp::socket socket) {
       if (!error) {
-        std::cout << "Client connected\n";
+        if (g_logging_enabled) std::cout << "Client connected\n";
         std::make_shared<Connection>(std::move(socket), store_)->start();
       } else {
         std::cerr << "Accept error: " << error.message() << "\n";
