@@ -26,27 +26,31 @@ std::optional<std::string> CommandHandler::check_args(const Command &cmd, const 
   return std::nullopt;
 }
 
-std::string CommandHandler::handle(const RespValue& request) const {
+void CommandHandler::handle(const RespValue& request, const asio::any_io_executor &executor,
+    const std::function<void(std::string)>& on_reply) const
+  {
   if ((request.type != RespValue::Type::Array)  || request.elements.empty()) {
-    return "-ERR invalid command format\r\n";
+    on_reply("-ERR invalid command format\r\n");
+    return;
   }
 
   const auto cmd = parse_command(request);
 
   switch (cmd.type) {
-    case Command::Type::Ping: return handle_ping(cmd);
-    case Command::Type::Echo: return handle_echo(cmd);
-    case Command::Type::Set:  return handle_set(cmd);
-    case Command::Type::Get:  return handle_get(cmd);
-    case Command::Type::RPush: return handle_rpush(cmd);
-    case Command::Type::LPush: return handle_lpush(cmd);
-    case Command::Type::LRange: return handle_lrange(cmd);
-    case Command::Type::LLen: return handle_llen(cmd);
-    case Command::Type::LPop: return handle_lpop(cmd);
+    case Command::Type::Ping: { on_reply(handle_ping(cmd)); return; }
+    case Command::Type::Echo: { on_reply(handle_echo(cmd)); return; }
+    case Command::Type::Set:  { on_reply(handle_set(cmd)); return; }
+    case Command::Type::Get:  { on_reply(handle_get(cmd)); return; }
+    case Command::Type::RPush: { on_reply(handle_rpush(cmd)); return; }
+    case Command::Type::LPush: { on_reply(handle_lpush(cmd)); return; }
+    case Command::Type::LRange: { on_reply(handle_lrange(cmd)); return; }
+    case Command::Type::LLen: { on_reply(handle_llen(cmd)); return; }
+    case Command::Type::LPop: { on_reply(handle_lpop(cmd)); return; }
+    case Command::Type::BLPop: { handle_blpop(cmd, executor, on_reply); return; }
     case Command::Type::Unknown: break;
   }
 
-  return "-ERR unknown command " + cmd.name + "\r\n";
+  on_reply("-ERR unknown command " + cmd.name + "\r\n");
 }
 
 std::string CommandHandler::handle_ping(const Command& cmd) {
@@ -158,6 +162,58 @@ std::string CommandHandler::handle_lpop(const Command &cmd) const {
     response += "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
   }
   return response;
+}
+
+void CommandHandler::handle_blpop(const Command &cmd, const asio::any_io_executor& executor,
+  const std::function<void(std::string)>& on_reply) const {
+  if (const auto err = check_args(cmd, 2)) {
+    on_reply(*err);
+    return;
+  }
+
+  const double timeout = std::stod(cmd.args.back());
+  const std::vector keys(cmd.args.begin(), cmd.args.end() - 1);
+
+  // Before blocking, check if there are any elements available in the specified lists.
+  // If so, return immediately without blocking.
+  for (const auto& key : keys) {
+    // Returns std::nullopt if the key does not exist, so we can treat that the same as an empty list.
+    if (const auto values = store_.lpop(key, 1)) {
+      std::string response = "*2\r\n$" + std::to_string(key.size()) + "\r\n" + key + "\r\n";
+      const auto& val = (*values)[0];
+      response += "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
+      on_reply(response);
+      return;
+    }
+  }
+
+  // If all lists are empty, create a new timer for the specified timeout and register a BLPOP callback.
+  auto timer = std::make_shared<asio::steady_timer>(executor);
+  if (timeout > 0) {
+    timer->expires_after(std::chrono::duration_cast<std::chrono::steady_clock::duration>
+      (std::chrono::duration<double>(timeout)));
+  } else {
+    timer->expires_at(std::chrono::steady_clock::time_point::max());
+  }
+
+  // Use a shared pointer to store the callback ID so it can be captured by both the BLPOP callback and the timer callback.
+  auto id_ptr = std::make_shared<uint64_t>(0);
+  *id_ptr = store_.register_blpop(keys, [on_reply, timer](const std::string &key, const std::string &value) {
+    timer->cancel();
+    std::string response = "*2\r\n$" + std::to_string(key.size()) + "\r\n" + key + "\r\n";
+    response += "$" + std::to_string(value.size()) + "\r\n" + value + "\r\n";
+    on_reply(response);
+  });
+
+  // Set up the timer callback to handle the timeout case.
+  // If the timer expires before any element is pushed to the monitored lists, it will unregister the BLPOP callback
+  // and return a RESP Null array.
+  timer->async_wait([this, id_ptr, on_reply](const asio::error_code& ec) {
+    if (!ec) {
+      store_.unregister_blpop(*id_ptr);
+      on_reply("*-1\r\n");
+    }
+  });
 }
 
 std::optional<std::chrono::milliseconds> CommandHandler::parse_expiry(const Command &cmd) {

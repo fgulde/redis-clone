@@ -42,7 +42,7 @@ public:
      * @brief Gets the ephemeral port on which the server is listening to.
      * @return The port number.
      */
-    uint16_t port() const { return port_; }
+    [[nodiscard]] uint16_t port() const { return port_; }
 
 private:
     asio::io_context io_context_;

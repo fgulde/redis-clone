@@ -6,7 +6,6 @@
 
 #include <string>
 #include <string_view>
-#include <array>
 #include <span>
 #include <vector>
 #include <asio.hpp>
@@ -22,7 +21,7 @@ public:
      */
     explicit TestClient(const uint16_t port)
         : socket_(io_context_) {
-        socket_.connect(asio::ip::tcp::endpoint(asio::ip::address_v4::loopback(), port));
+        socket_.connect(tcp::endpoint(asio::ip::address_v4::loopback(), port));
     }
 
     TestClient(const TestClient&) = delete;
@@ -67,8 +66,7 @@ public:
                 }
                 prev = c;
             }
-            int len = std::stoi(len_str);
-            if (len != -1) {
+            if (const int len = std::stoi(len_str); len != -1) {
                 std::string data(len + 2, '\0'); // +2 for trailing CRLF
                 asio::read(socket_, asio::buffer(data));
                 response += data;
@@ -235,6 +233,17 @@ public:
         return send_raw(encode_array({"lpop", key, std::to_string(count)}));
     }
 
+    /**
+     * @brief Sends a BLPOP command.
+     * @param args The keys followed by the timeout.
+     * @return The raw RESP2 response.
+     */
+    std::string blpop(const std::vector<std::string_view>& args) {
+        std::vector<std::string_view> req{"blpop"};
+        req.insert(req.end(), args.begin(), args.end());
+        return send_raw(encode_array(req));
+    }
+
 private:
     static std::string encode_array(const std::span<const std::string_view> args) {
         std::string res;
@@ -248,14 +257,14 @@ private:
     }
 
     static std::string encode_array(const std::initializer_list<std::string_view> args) {
-        return encode_array(std::span<const std::string_view>(args.begin(), args.end()));
+        return encode_array(std::span(args.begin(), args.end()));
     }
 
     // Helper that handles strings correctly via string_view implicit conversion,
     // but tests might pass temporaries, so std::to_string helps with some.
     // For mixing strings and string_views, we create small vectors in callers.
     static std::string encode_array(const std::vector<std::string_view>& args) {
-        return encode_array(std::span<const std::string_view>(args));
+        return encode_array(std::span(args));
     }
 
     static std::string encode_array(const std::vector<std::string>& args) {
@@ -264,6 +273,8 @@ private:
         return encode_array(std::span<const std::string_view>(views));
     }
 
+    // Own io_context since socket needs it, but we run synchronously so io_context.run() is never called.
     asio::io_context io_context_;
-    asio::ip::tcp::socket socket_;
+
+    tcp::socket socket_;
 };

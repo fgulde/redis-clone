@@ -18,16 +18,17 @@ TEST(ConcurrentTest, ConcurrentPingsAllReturnPong) {
     constexpr int kPingsPerClient = 50;
 
     const TestServer server;
-    std::latch start_latch(kClients);
-    std::vector<bool> results(kClients, true);
+    std::latch start_latch(kClients); // initialize the countdown
+    std::vector results(kClients, true);
 
     std::vector<std::jthread> threads;
     for (int i = 0; i < kClients; ++i) {
         threads.emplace_back([&, i] {
-            TestClient client(server.port());
+            TestClient client(server.port()); // create the client connection for every thread
             start_latch.count_down();
-            start_latch.wait();
+            start_latch.wait(); // wait for all threads to be ready before starting the test
             for (int j = 0; j < kPingsPerClient; ++j) {
+                // If one of the pings fails, mark this client's result as false.
                 if (client.ping() != "+PONG\r\n") {
                     results[i] = false;
                 }
@@ -47,18 +48,20 @@ TEST(ConcurrentTest, ConcurrentSetGetDoNotCrossTalk) {
     constexpr int kClients = 5;
 
     const TestServer server;
-    std::latch latch(kClients);
-    std::vector<bool> results(kClients, true);
+    std::latch latch(kClients); // initialize the countdown
+    std::vector results(kClients, true);
 
     std::vector<std::jthread> threads;
     for (int i = 0; i < kClients; ++i) {
         threads.emplace_back([&, i] {
-            TestClient client(server.port());
+            TestClient client(server.port()); // create the client connection for every thread
+
+            // Create a unique key-value pair for this thread to set and get.
             const std::string key = "key_" + std::to_string(i);
             const std::string val = "val_" + std::to_string(i);
 
             latch.count_down();
-            latch.wait();
+            latch.wait(); // wait for all threads to be ready before starting the test
 
             client.set(key, val);
             const std::string expected = "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
