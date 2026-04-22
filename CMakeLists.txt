@@ -1,15 +1,26 @@
+# ==============================================================================
+# 1. GLOBAL SETUP & PROJECT DEFINITION
+# ==============================================================================
 cmake_minimum_required(VERSION 3.13)
 
 project(redis-starter-cpp)
 
+# Ensure pthread is preferred for thread support (important for Linux)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
+# ==============================================================================
+# 2. DEPENDENCIES / EXTERNAL PACKAGES
+# ==============================================================================
 find_package(Threads REQUIRED)
 find_package(asio CONFIG REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 
-enable_testing()
+enable_testing() # Enable CTest support
 
+# ==============================================================================
+# 3. CORE LIBRARY (redis_lib)
+# Contains all business logic, reusable by both the main app and tests.
+# ==============================================================================
 add_library(redis_lib STATIC
         src/command/CommandHandler.cpp
         src/command/CommandHandler.hpp
@@ -26,12 +37,14 @@ add_library(redis_lib STATIC
         src/resp/RespValue.hpp
 )
 
+# Enforce strict modern C++ standards
 set_target_properties(redis_lib PROPERTIES
         CXX_STANDARD 23
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS OFF
 )
 
+# Treat all warnings as errors to maintain code quality
 target_compile_options(redis_lib PRIVATE
         -Wall
         -Wextra
@@ -40,11 +53,23 @@ target_compile_options(redis_lib PRIVATE
 )
 
 target_include_directories(redis_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(redis_lib PUBLIC asio::asio Threads::Threads)
+target_link_libraries(redis_lib PUBLIC
+        asio::asio
+        Threads::Threads
+)
 
+
+# ==============================================================================
+# 4. MAIN EXECUTABLE
+# The actual server binary that runs in production.
+# ==============================================================================
 add_executable(redis src/main.cpp)
 target_link_libraries(redis PRIVATE redis_lib)
 
+# ==============================================================================
+# 5. TESTING EXECUTABLE
+# Contains all unit and integration tests.
+# ==============================================================================
 add_executable(redis_tests
         tests/main_test.cpp
         tests/unit/resp_parser_test.cpp
@@ -54,6 +79,7 @@ add_executable(redis_tests
         tests/integration/set_get_test.cpp
         tests/integration/concurrent_test.cpp
         tests/integration/list_test.cpp
+        tests/integration/blpop_test.cpp
         tests/helpers/test_server.hpp
         tests/helpers/test_client.hpp
 )
@@ -64,7 +90,18 @@ set_target_properties(redis_tests PROPERTIES
         CXX_EXTENSIONS OFF
 )
 
-target_include_directories(redis_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(redis_tests PRIVATE redis_lib GTest::gtest GTest::gtest_main GTest::gmock)
+# Include src/ and tests/ directories so tests can access headers easily
+target_include_directories(redis_tests PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
 
+# Link against the core library and GoogleTest
+target_link_libraries(redis_tests PRIVATE
+        redis_lib
+        GTest::gtest
+        GTest::gtest_main
+        GTest::gmock)
+
+# Register the testing binary with CTest
 add_test(NAME redis_tests COMMAND redis_tests)

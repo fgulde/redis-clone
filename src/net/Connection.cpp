@@ -46,13 +46,15 @@ void Connection::do_read() {
 
   if (!command) {
     asio::write(socket_, asio::buffer(std::string("-ERR parse error\r\n")));
-  } else {
-    // Process the RespValue to a Command and handle it
-    const std::string response = handler_.handle(*command);
-    asio::write(socket_, asio::buffer(response)); // Send the response back to the client
-  }
-
-  // Recursively call handle_client to read the next request
     do_read();
+  } else {
+    // Process the RespValue to a Command and handle it asynchronously
+    handler_.handle(*command, socket_.get_executor(), [this, self](const std::string& response) {
+      asio::async_write(socket_, asio::buffer(response), [this, self](const asio::error_code&, std::size_t) {
+        // Recursively call do_read to read the next request
+        do_read();
+      });
+    });
+  }
   });
 }

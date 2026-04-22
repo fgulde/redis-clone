@@ -4,6 +4,8 @@
 
 #pragma once
 #include <string>
+#include <asio.hpp>
+#include <functional>
 
 #include "Command.hpp"
 #include "../resp/RespParser.hpp"
@@ -17,8 +19,16 @@
 class CommandHandler {
 public:
   explicit CommandHandler(Store& store);
-  /// Takes a RespValue, parses the command, executes it, and returns a RESP-Response
-  [[nodiscard]] std::string handle(const RespValue& request) const;
+
+  /**
+   * Takes a RespValue, parses the command, executes it, and calls on_reply with the RESP-Response
+   * @param request The incoming command request as a RespValue.
+   * @param executor The executor to use for any asynchronous operations (e.g., for BLPOP).
+   * @param on_reply Callback function to call with the RESP-formatted response string once the command has been processed.
+    This allows for asynchronous handling of commands that may involve waiting (like BLPOP).
+   */
+  void handle(const RespValue& request, const asio::any_io_executor &executor,
+    const std::function<void(std::string)>& on_reply) const;
 private:
   /**
    * @brief Parses a RESP array request into a Command struct.
@@ -44,6 +54,7 @@ private:
   [[nodiscard]] std::string handle_lrange(const Command& cmd) const;
   [[nodiscard]] std::string handle_llen(const Command& cmd) const;
   [[nodiscard]] std::string handle_lpop(const Command& cmd) const;
+  void handle_blpop(const Command& cmd, const asio::any_io_executor& executor, const std::function<void(std::string)>& on_reply) const;
 
   /**
    * @brief Parses optional expiry from a SET command.

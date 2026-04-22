@@ -23,7 +23,7 @@ Areas of exploration include:
 Already implemented:
 - RESP2 protocol parsing (`SimpleString`, `BulkString`, `Integer`, `Array`, `Null`)
 - `PING`, `ECHO`, `SET`, `GET` commands
-- List commands (`RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`)
+- List commands (`RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`, `BLPOP`)
 - Key expiration via `EX` (seconds) and `PX` (milliseconds) flags on `SET`
 - Lazy deletion of expired keys on access
 - Async TCP server with per-client connections (`asio`)
@@ -46,7 +46,7 @@ Planned:
 - **Language:** C++23
 - **Build System:** CMake
 - **Package Management:** vcpkg
-- **Networking:** Asio (standalone)
+- **Networking:** asio (standalone)
 - **Testing:** Google Test (GTest)
 
 ## Building

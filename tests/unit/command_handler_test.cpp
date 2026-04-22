@@ -7,18 +7,20 @@
 
 #include <gtest/gtest.h>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "../../src/command/CommandHandler.hpp"
 #include "../../src/store/Store.hpp"
 #include "../../src/resp/RespValue.hpp"
+#include <asio.hpp>
 
 class CommandHandlerTest : public ::testing::Test {
 protected:
     Store store;
     CommandHandler handler{store};
 
-    std::string handle(const std::string& name, const std::vector<std::string>& args) const {
+    std::string handle(const std::string& name, const std::vector<std::string>& args) {
         RespValue request;
         request.type = RespValue::Type::Array;
 
@@ -34,7 +36,13 @@ protected:
             request.elements.push_back(r_arg);
         }
 
-        return handler.handle(request);
+        std::string result;
+        asio::io_context ioc;
+        handler.handle(request, ioc.get_executor(), [&](std::string r) {
+            result = std::move(r);
+        });
+        ioc.run();
+        return result;
     }
 };
 

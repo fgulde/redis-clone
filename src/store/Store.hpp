@@ -8,6 +8,7 @@
 #include <optional>
 #include <chrono>
 #include <deque>
+#include <functional>
 
 class Store {
 public:
@@ -76,6 +77,22 @@ public:
    */
   std::optional<std::vector<std::string>> lpop(std::string_view key, std::size_t count = 1);
 
+  using BlpopCallback = std::function<void(std::string, std::string)>;
+
+  /**
+   * @brief Registers a callback for BLPOP. Returns a unique ID for the registration.
+   * @param keys The list keys to monitor for BLPOP.
+   * @param cb The callback to invoke when an element is pushed to any of the specified lists.
+   * The callback receives the key and value of the pushed element.
+   * @return A unique ID for the registration, which can be used to unregister the callback later.
+   */
+  uint64_t register_blpop(const std::vector<std::string>& keys, const BlpopCallback &cb);
+
+  /**
+   * @brief Unregisters a BLPOP callback by its ID.
+   */
+  void unregister_blpop(uint64_t id);
+
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
   using TimePoint = Clock::time_point; ///< Represents the expiration time of an entry
@@ -88,8 +105,22 @@ private:
     std::optional<TimePoint> expires_at;
   };
 
+  struct BlpopRegistration {
+    uint64_t id; ///< Unique ID for each client
+    BlpopCallback callback;
+  };
+
   std::unordered_map<std::string, Entry> data_; ///< Main storage for key-value pairs, with optional expiration
 
   /// Main storage for list values. Uses std::deque instead of std::vector for efficient push_front operations
   std::unordered_map<std::string, std::deque<std::string>> lists_;
+
+  /**
+   * @brief Maps list keys to a deque of BLPOP registrations.
+   * The deque is necessary, because multiple clients can register BLPOP callbacks for the same list,
+   * and we need to notify them in the order they were registered.
+   * When an element is pushed to a list, the first registration in the deque is notified and removed.
+   */
+  std::unordered_map<std::string, std::deque<BlpopRegistration>> blpop_callbacks_;
+  uint64_t next_blpop_id_ = 1; ///< Counter for generating unique client IDs for BLPOP registrations
 };
