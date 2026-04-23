@@ -49,43 +49,65 @@ std::size_t Store::rpush(const std::string_view key, const std::vector<std::stri
 
   auto& list = lists_[k];
   for (const auto& value : values) {
-    // Check if there are waiters for this list
-    if (auto it = blpop_callbacks_.find(k); it != blpop_callbacks_.end() && !(it->second.empty())) {
-      auto [id, callback] = it->second.front(); // Get the first callback from the list
-      it->second.pop_front(); // Remove this callback from the list of waiters for this key
-
-      // Need to unregister from other keys BEFORE calling the callback,
-      // in case the callback does something that relies on this.
-      const auto cb = callback;
-      unregister_blpop(id);
-      cb(k, value);
-    } else {
-      list.push_back(value);
-    }
+    list.push_back(value);
   }
-  return list.size();
+
+  const std::size_t len = list.size();
+
+  // Serve waiters for this list using the current front elements
+  const auto it = blpop_callbacks_.find(k);
+  while (it != blpop_callbacks_.end() && !it->second.empty() && !list.empty()) {
+    auto [id, callback] = it->second.front(); // Get the next waiting callback for this key
+    it->second.pop_front(); // Remove it from the waiting list
+
+    // Remove the front element from the list again and call the callback with it
+    const std::string value = list.front();
+    list.pop_front();
+
+    // Need to unregister from other keys BEFORE calling the callback,
+    // in case the callback does something that relies on this.
+    const auto cb = callback;
+    unregister_blpop(id);
+    cb(k, value);
+  }
+
+  if (list.empty()) {
+    lists_.erase(k);
+  }
+
+  return len;
 }
 
 std::size_t Store::lpush(const std::string_view key, const std::vector<std::string> &values) {
   const std::string k(key);
 
   auto& list = lists_[k];
-  // Check if there are waiters for this list
   for (const auto& value : values) {
-    if (auto it = blpop_callbacks_.find(k); it != blpop_callbacks_.end() && !(it->second.empty())) {
-      auto [id, callback] = it->second.front(); // Get the first callback from the list
-      it->second.pop_front(); // Remove this callback from the list of waiters for this key
-
-      // Need to unregister from other keys BEFORE calling the callback,
-      // in case the callback does something that relies on this.
-      const auto cb = callback;
-      unregister_blpop(id);
-      cb(k, value);
-    } else {
-      list.push_front(value);
-    }
+    list.push_front(value);
   }
-  return list.size();
+
+  const std::size_t len = list.size();
+
+  // Serve waiters for this list using the current front elements
+  const auto it = blpop_callbacks_.find(k);
+  while (it != blpop_callbacks_.end() && !it->second.empty() && !list.empty()) {
+    auto [id, callback] = it->second.front(); // Get the next waiting callback for this key
+    it->second.pop_front(); // Remove it from the waiting list
+
+    // Remove the front element from the list again and call the callback with it
+    const std::string value = list.front();
+    list.pop_front();
+
+    const auto cb = callback;
+    unregister_blpop(id);
+    cb(k, value);
+  }
+
+  if (list.empty()) {
+    lists_.erase(k);
+  }
+
+  return len;
 }
 
 std::vector<std::string> Store::lrange(const std::string_view key, long long start, long long stop) const {
