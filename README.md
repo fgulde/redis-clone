@@ -22,11 +22,12 @@ Areas of exploration include:
 
 Already implemented:
 - RESP2 protocol parsing (`SimpleString`, `BulkString`, `Integer`, `Array`, `Null`)
-- `PING`, `ECHO`, `SET`, `GET` commands
+- Key-Value commands (`SET`, `GET`, `TYPE`)
+- Basic utility commands (`PING`, `ECHO`)
 - List commands (`RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`, `BLPOP`)
 - Key expiration via `EX` (seconds) and `PX` (milliseconds) flags on `SET`
 - Lazy deletion of expired keys on access
-- Async TCP server with per-client connections (`asio`)
+- Async TCP server with per-client connections (`asio`) handles multiple concurrent clients
 - Modular architecture (networking, RESP parsing, command handling, storage)
 
 Planned:
@@ -66,6 +67,45 @@ To build and run the test suite (using GTest and CTest), use:
 ```bash
 ./run_tests.sh
 ```
+
+## Architecture & Interaction
+
+The following diagram illustrates how the core components interact to process a client request:
+
+```mermaid
+classDiagram
+    class Server {
+        - acceptor_
+        - store_
+        + run()
+        - do_accept()
+    }
+    class Connection {
+        - socket
+        + start()
+        - readLoop()
+        - writeResponse()
+    }
+    class RespParser {
+        + parse(buffer) RespValue
+    }
+    class CommandHandler {
+        + handle(RespValue, Store) RespValue
+    }
+    class Store {
+        + set(key, value, ttl)
+        + get(key)
+        + type(key)
+        + listPush(key, values...)
+    }
+    
+    Server "1" *-- "1" Store : owns single instance
+    Server "1" --> "*" Connection : creates for each client
+    Connection "1" *-- "1" RespParser : owns
+    Connection "1" *-- "1" CommandHandler : owns
+    CommandHandler "*" --> "1" Store : references shared store
+```
+
 ## Project Structure
 ```
 src/
@@ -85,7 +125,8 @@ src/
 │   └── RespParser.cpp        # RESP2 protocol parser
 ├── store/
 │   ├── Store.hpp
-│   └── Store.cpp             # In-memory key-value store with TTL support
+│   ├── Store.cpp             # In-memory key-value store with TTL support
+│   └── StoreValue.hpp        # Data structures for stored values
 └── util/
     └── StringUtils.hpp       # String helper utilities
 ```
