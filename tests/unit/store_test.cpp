@@ -33,3 +33,20 @@ TEST(StoreTest, OverwriteClearsTTL) {
     ASSERT_TRUE(val.has_value());
     EXPECT_EQ(val.value(), "new_val");
 }
+
+TEST(StoreTest, TypeString) {
+    Store s;
+    s.set("key_str", "val");
+    EXPECT_EQ(s.type("key_str").to_string(), "string");
+}
+
+TEST(StoreTest, TypeList) {
+    Store s;
+    s.rpush("key_list", {"elem1", "elem2"});
+    EXPECT_EQ(s.type("key_list").to_string(), "list");
+}
+
+TEST(StoreTest, TypeNone) {
+    Store s;
+    EXPECT_EQ(s.type("missing_key").to_string(), "none");
+}

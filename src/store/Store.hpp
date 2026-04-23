@@ -4,11 +4,11 @@
 
 #pragma once
 #include <string>
+#include <string_view>
+#include <vector>
 #include <unordered_map>
-#include <optional>
-#include <chrono>
-#include <deque>
 #include <functional>
+#include "StoreValue.hpp"
 
 class Store {
 public:
@@ -93,27 +93,23 @@ public:
    */
   void unregister_blpop(uint64_t id);
 
+  /**
+   * @brief Returns the type of the value stored at a key.
+   * @param key The key to check.
+   * @return The type of the value, or None if the key does not exist.
+   */
+  StoreType type(std::string_view key);
+
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
   using TimePoint = Clock::time_point; ///< Represents the expiration time of an entry
-
-  /**
-   * @brief Represents a stored entry in the non-list storage with its value and optional expiration time.
-   */
-  struct Entry {
-    std::string value;
-    std::optional<TimePoint> expires_at;
-  };
 
   struct BlpopRegistration {
     uint64_t id; ///< Unique ID for each client
     BlpopCallback callback;
   };
 
-  std::unordered_map<std::string, Entry> data_; ///< Main storage for key-value pairs, with optional expiration
-
-  /// Main storage for list values. Uses std::deque instead of std::vector for efficient push_front operations
-  std::unordered_map<std::string, std::deque<std::string>> lists_;
+  std::unordered_map<std::string, StoreValue> data_; ///< Main storage for all key-value pairs
 
   /**
    * @brief Maps list keys to a deque of BLPOP registrations.

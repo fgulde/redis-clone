@@ -7,12 +7,12 @@
 #include <ranges>
 
 void Store::set(const std::string_view key, std::string value) {
-  data_[std::string(key)] = Entry{ std::move(value), std::nullopt };
+  data_[std::string(key)] = StoreValue{ std::move(value), std::nullopt };
 }
 
 void Store::set(const std::string_view key, std::string value, const std::chrono::milliseconds ttl) {
   auto expires_at = Clock::now() + ttl;
-  data_[std::string(key)] = Entry{ std::move(value), expires_at };
+  data_[std::string(key)] = StoreValue{ std::move(value), expires_at };
 }
 
 std::optional<std::string> Store::get(const std::string_view key) {
@@ -25,7 +25,10 @@ std::optional<std::string> Store::get(const std::string_view key) {
     return std::nullopt; // Entry has expired
   }
 
-  return it->second.value;
+  if (auto* str = std::get_if<std::string>(&it->second.value)) {
+    return *str;
+  }
+  return std::nullopt; // Not a string
 }
 
 uint64_t Store::register_blpop(const std::vector<std::string>& keys, const BlpopCallback &cb) {
@@ -47,7 +50,12 @@ void Store::unregister_blpop(const uint64_t id) {
 std::size_t Store::rpush(const std::string_view key, const std::vector<std::string> &values) {
   const std::string k(key);
 
-  auto& list = lists_[k];
+  auto& store_val = data_[k];
+  if (!std::holds_alternative<std::deque<std::string>>(store_val.value)) {
+    store_val.value = std::deque<std::string>{};
+  }
+
+  auto& list = std::get<std::deque<std::string>>(store_val.value);
   for (const auto& value : values) {
     list.push_back(value);
   }
@@ -72,7 +80,7 @@ std::size_t Store::rpush(const std::string_view key, const std::vector<std::stri
   }
 
   if (list.empty()) {
-    lists_.erase(k);
+    data_.erase(k);
   }
 
   return len;
@@ -81,7 +89,12 @@ std::size_t Store::rpush(const std::string_view key, const std::vector<std::stri
 std::size_t Store::lpush(const std::string_view key, const std::vector<std::string> &values) {
   const std::string k(key);
 
-  auto& list = lists_[k];
+  auto& store_val = data_[k];
+  if (!std::holds_alternative<std::deque<std::string>>(store_val.value)) {
+    store_val.value = std::deque<std::string>{};
+  }
+
+  auto& list = std::get<std::deque<std::string>>(store_val.value);
   for (const auto& value : values) {
     list.push_front(value);
   }
@@ -104,17 +117,20 @@ std::size_t Store::lpush(const std::string_view key, const std::vector<std::stri
   }
 
   if (list.empty()) {
-    lists_.erase(k);
+    data_.erase(k);
   }
 
   return len;
 }
 
 std::vector<std::string> Store::lrange(const std::string_view key, long long start, long long stop) const {
-  const auto it = lists_.find(std::string(key));
-  if (it == lists_.end()) return {};
+  const auto it = data_.find(std::string(key));
+  if (it == data_.end()) return {};
 
-  const auto& list = it->second;
+  const auto* list_ptr = std::get_if<std::deque<std::string>>(&it->second.value);
+  if (!list_ptr) return {};
+
+  const auto& list = *list_ptr;
   const auto size = static_cast<long long>(list.size());
 
   // Resolve negative indices: -1 = last element, -2 = second to last, etc.
@@ -129,24 +145,45 @@ std::vector<std::string> Store::lrange(const std::string_view key, long long sta
 }
 
 std::size_t Store::llen(const std::string_view key) const {
-  const auto it = lists_.find(std::string(key));
-  if (it == lists_.end()) return 0;
-  return it->second.size();
+  const auto it = data_.find(std::string(key));
+  if (it == data_.end()) return 0;
+
+  if (const auto* list = std::get_if<std::deque<std::string>>(&it->second.value)) {
+    return list->size();
+  }
+  return 0;
 }
 
 std::optional<std::vector<std::string>> Store::lpop(const std::string_view key, const std::size_t count) {
-  const auto it = lists_.find(std::string(key));
-  if (it == lists_.end()) return std::nullopt;
+  const auto it = data_.find(std::string(key));
+  if (it == data_.end()) return std::nullopt;
 
-  auto& list = it->second;
+  auto* list_ptr = std::get_if<std::deque<std::string>>(&it->second.value);
+  if (!list_ptr) return std::nullopt;
+
+  auto& list = *list_ptr;
   const std::size_t n = std::min(count, list.size());
 
   std::vector result(list.begin(), list.begin() + static_cast<std::ptrdiff_t>(n));
   list.erase(list.begin(), list.begin() + static_cast<std::ptrdiff_t>(n));
 
   if (list.empty()) {
-    lists_.erase(it);
+    data_.erase(it);
   }
 
   return result;
+}
+
+StoreType Store::type(const std::string_view key) {
+  const auto it = data_.find(std::string(key));
+  if (it == data_.end()) {
+    return {StoreType::Type::None};
+  }
+
+  if (it->second.expires_at && Clock::now() > *it->second.expires_at) {
+    data_.erase(it);
+    return {StoreType::Type::None};
+  }
+
+  return it->second.type();
 }
