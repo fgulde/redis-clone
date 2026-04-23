@@ -80,6 +80,7 @@ add_executable(redis_tests
         tests/integration/concurrent_test.cpp
         tests/integration/list_test.cpp
         tests/integration/blpop_test.cpp
+        tests/integration/type_test.cpp
         tests/helpers/test_server.hpp
         tests/helpers/test_client.hpp
 )

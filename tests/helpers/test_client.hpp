@@ -10,6 +10,8 @@
 #include <vector>
 #include <asio.hpp>
 
+using asio::ip::tcp;
+
 /**
  * @brief Thin synchronous TCP client for sending RESP2 commands in integration tests.
  */

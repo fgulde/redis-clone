@@ -47,6 +47,7 @@ void CommandHandler::handle(const RespValue& request, const asio::any_io_executo
     case Command::Type::LLen: { on_reply(handle_llen(cmd)); return; }
     case Command::Type::LPop: { on_reply(handle_lpop(cmd)); return; }
     case Command::Type::BLPop: { handle_blpop(cmd, executor, on_reply); return; }
+    case Command::Type::TypeCmd: { on_reply(handle_type(cmd)); return; }
     case Command::Type::Unknown: break;
   }
 
@@ -162,6 +163,15 @@ std::string CommandHandler::handle_lpop(const Command &cmd) const {
     response += "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
   }
   return response;
+}
+
+std::string CommandHandler::handle_type(const Command &cmd) const {
+  if (auto err = check_args(cmd, 1)) return *err;
+
+  const std::string& key = cmd.args[0];
+  const auto type = store_.type(key);
+
+  return "+" + type.to_string() + "\r\n";
 }
 
 void CommandHandler::handle_blpop(const Command &cmd, const asio::any_io_executor& executor,

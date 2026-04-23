@@ -55,6 +55,7 @@ private:
   [[nodiscard]] std::string handle_llen(const Command& cmd) const;
   [[nodiscard]] std::string handle_lpop(const Command& cmd) const;
   void handle_blpop(const Command& cmd, const asio::any_io_executor& executor, const std::function<void(std::string)>& on_reply) const;
+  [[nodiscard]] std::string handle_type(const Command& cmd) const;
 
   /**
    * @brief Parses optional expiry from a SET command.
