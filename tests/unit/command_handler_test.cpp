@@ -6,44 +6,40 @@
 // without starting a server or network connection.
 
 #include <gtest/gtest.h>
-#include <string>
-#include <utility>
-#include <vector>
-
-#include "../../src/command/CommandHandler.hpp"
-#include "../../src/store/Store.hpp"
-#include "../../src/resp/RespValue.hpp"
-#include <asio.hpp>
+#include "command/CommandHandler.hpp"
+#include "store/BlockingManager.hpp"
+#include "resp/RespValue.hpp"
 
 class CommandHandlerTest : public ::testing::Test {
 protected:
-    Store store;
-    CommandHandler handler{store};
+  Store store;
+  BlockingManager blocking_manager;
+  CommandHandler handler{store, blocking_manager};
+  asio::io_context io_context;
 
-    std::string handle(const std::string& name, const std::vector<std::string>& args) {
-        RespValue request;
-        request.type = RespValue::Type::Array;
+  std::string handle(const std::string& name, const std::vector<std::string>& args) {
+      RespValue request;
+      request.type = RespValue::Type::Array;
 
-        RespValue cmd;
-        cmd.type = RespValue::Type::BulkString;
-        cmd.str = name;
-        request.elements.push_back(cmd);
+      RespValue cmd;
+      cmd.type = RespValue::Type::BulkString;
+      cmd.str = name;
+      request.elements.push_back(cmd);
 
-        for (const auto& arg : args) {
-            RespValue r_arg;
-            r_arg.type = RespValue::Type::BulkString;
-            r_arg.str = arg;
-            request.elements.push_back(r_arg);
-        }
+      for (const auto& arg : args) {
+          RespValue r_arg;
+          r_arg.type = RespValue::Type::BulkString;
+          r_arg.str = arg;
+          request.elements.push_back(r_arg);
+      }
 
-        std::string result;
-        asio::io_context ioc;
-        handler.handle(request, ioc.get_executor(), [&](std::string r) {
-            result = std::move(r);
-        });
-        ioc.run();
-        return result;
-    }
+      std::string result;
+      handler.handle(request, io_context.get_executor(), [&](std::string r) {
+          result = std::move(r);
+      });
+      io_context.run();
+      return result;
+  }
 };
 
 TEST_F(CommandHandlerTest, PingReturnsSimplePong) {

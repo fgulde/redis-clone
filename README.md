@@ -77,33 +77,42 @@ classDiagram
     class Server {
         - acceptor_
         - store_
+        - blocking_manager_
         + run()
         - do_accept()
     }
     class Connection {
         - socket
         + start()
-        - readLoop()
-        - writeResponse()
+        - do_read()
     }
     class RespParser {
         + parse(buffer) RespValue
     }
     class CommandHandler {
-        + handle(RespValue, Store) RespValue
+        + handle(request, executor, on_reply)
     }
     class Store {
         + set(key, value, ttl)
         + get(key)
         + type(key)
-        + listPush(key, values...)
+        + rpush(key, values)
+        + lpush(key, values)
+        + lpop(key, count)
+    }
+    class BlockingManager {
+        + register_blpop(keys, callback)
+        + unregister_blpop(id)
+        + serve_blpop_waiters(key, store)
     }
     
     Server "1" *-- "1" Store : owns single instance
+    Server "1" *-- "1" BlockingManager : owns single instance
     Server "1" --> "*" Connection : creates for each client
     Connection "1" *-- "1" RespParser : owns
     Connection "1" *-- "1" CommandHandler : owns
     CommandHandler "*" --> "1" Store : references shared store
+    CommandHandler "*" --> "1" BlockingManager : references shared blocking manager
 ```
 
 ## Project Structure
@@ -126,7 +135,9 @@ src/
 ├── store/
 │   ├── Store.hpp
 │   ├── Store.cpp             # In-memory key-value store with TTL support
-│   └── StoreValue.hpp        # Data structures for stored values
+│   ├── StoreValue.hpp        # Data structures for stored values
+│   ├── BlockingManager.hpp
+│   └── BlockingManager.cpp   # Manages async waiting clients (BLPOP, etc.)
 └── util/
     └── StringUtils.hpp       # String helper utilities
 ```

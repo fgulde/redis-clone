@@ -8,9 +8,11 @@
 
 inline bool g_logging_enabled = true;
 
-Connection::Connection(tcp::socket socket, Store &store)
-  : socket_(std::move(socket)), store_(store), handler_(store) {
-}
+Connection::Connection(tcp::socket socket, Store &store, BlockingManager &blocking_manager)
+  : socket_(std::move(socket))
+  , store_(store)
+  , blocking_manager_(blocking_manager)
+  , handler_(store, blocking_manager) {}
 
 void Connection::start() {
   do_read();
