@@ -3,14 +3,14 @@
 //
 
 #pragma once
-#include <string>
+
 #include <asio.hpp>
-#include <functional>
+#include <string>
 
 #include "Command.hpp"
 #include "../resp/RespParser.hpp"
-#include "../resp/RespValue.hpp"
 #include "../store/Store.hpp"
+#include "../store/BlockingManager.hpp"
 
 /**
  * CommandHandler is responsible for processing incoming RESP requests in the form of RespValue objects,
@@ -18,9 +18,11 @@
  */
 class CommandHandler {
 public:
-  explicit CommandHandler(Store& store);
+  explicit CommandHandler(Store& store, BlockingManager& blocking_manager);
 
   /**
+   * @brief Handles a RESP request and produces a response string via an async callback.
+   *
    * Takes a RespValue, parses the command, executes it, and calls on_reply with the RESP-Response
    * @param request The incoming command request as a RespValue.
    * @param executor The executor to use for any asynchronous operations (e.g., for BLPOP).
@@ -65,4 +67,5 @@ private:
   static std::optional<std::chrono::milliseconds> parse_expiry(const Command& cmd);
 
   Store& store_;
+  BlockingManager& blocking_manager_;
 };

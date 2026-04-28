@@ -31,22 +31,6 @@ std::optional<std::string> Store::get(const std::string_view key) {
   return std::nullopt; // Not a string
 }
 
-uint64_t Store::register_blpop(const std::vector<std::string>& keys, const BlpopCallback &cb) {
-  const uint64_t id = next_blpop_id_++;
-  // Register the callback for each specified key.
-  // The callback will be invoked when an element is pushed to any of these keys.
-  for (const auto& key : keys) {
-    blpop_callbacks_[key].push_back({id, cb});
-  }
-  return id;
-}
-
-void Store::unregister_blpop(const uint64_t id) {
-  for (auto &q: blpop_callbacks_ | std::views::values) {
-    std::erase_if(q, [id](const auto& cb){ return cb.id == id; });
-  }
-}
-
 std::size_t Store::rpush(const std::string_view key, const std::vector<std::string> &values) {
   const std::string k(key);
 
@@ -61,27 +45,6 @@ std::size_t Store::rpush(const std::string_view key, const std::vector<std::stri
   }
 
   const std::size_t len = list.size();
-
-  // Serve waiters for this list using the current front elements
-  const auto it = blpop_callbacks_.find(k);
-  while (it != blpop_callbacks_.end() && !it->second.empty() && !list.empty()) {
-    auto [id, callback] = it->second.front(); // Get the next waiting callback for this key
-    it->second.pop_front(); // Remove it from the waiting list
-
-    // Remove the front element from the list again and call the callback with it
-    const std::string value = list.front();
-    list.pop_front();
-
-    // Need to unregister from other keys BEFORE calling the callback,
-    // in case the callback does something that relies on this.
-    const auto cb = callback;
-    unregister_blpop(id);
-    cb(k, value);
-  }
-
-  if (list.empty()) {
-    data_.erase(k);
-  }
 
   return len;
 }
@@ -100,25 +63,6 @@ std::size_t Store::lpush(const std::string_view key, const std::vector<std::stri
   }
 
   const std::size_t len = list.size();
-
-  // Serve waiters for this list using the current front elements
-  const auto it = blpop_callbacks_.find(k);
-  while (it != blpop_callbacks_.end() && !it->second.empty() && !list.empty()) {
-    auto [id, callback] = it->second.front(); // Get the next waiting callback for this key
-    it->second.pop_front(); // Remove it from the waiting list
-
-    // Remove the front element from the list again and call the callback with it
-    const std::string value = list.front();
-    list.pop_front();
-
-    const auto cb = callback;
-    unregister_blpop(id);
-    cb(k, value);
-  }
-
-  if (list.empty()) {
-    data_.erase(k);
-  }
 
   return len;
 }

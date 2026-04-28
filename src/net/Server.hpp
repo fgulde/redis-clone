@@ -6,6 +6,7 @@
 #include <asio.hpp>
 
 #include "../store/Store.hpp"
+#include "../store/BlockingManager.hpp"
 
 using asio::ip::tcp;
 
@@ -26,6 +27,7 @@ private:
   void do_accept();
 
   Store store_; ///< Shared store for all connections
+  BlockingManager blocking_manager_; ///< Shared blocking manager for all connections
   asio::io_context& io_context_; ///< Reference to the io_context, which handles all operations
   tcp::acceptor acceptor_; ///< Listens and accepts incoming TCP connections
 };

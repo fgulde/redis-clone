@@ -35,6 +35,9 @@ add_library(redis_lib STATIC
         src/command/Command.hpp
         src/util/StringUtils.hpp
         src/resp/RespValue.hpp
+        src/store/StoreValue.hpp
+        src/store/BlockingManager.cpp
+        src/store/BlockingManager.hpp
 )
 
 # Enforce strict modern C++ standards

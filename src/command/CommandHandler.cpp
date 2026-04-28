@@ -4,7 +4,7 @@
 
 #include "CommandHandler.hpp"
 
-CommandHandler::CommandHandler(Store &store) : store_(store) {}
+CommandHandler::CommandHandler(Store &store, BlockingManager &blocking_manager) : store_(store), blocking_manager_(blocking_manager) {}
 
 Command CommandHandler::parse_command(const RespValue &request) {
   Command cmd;
@@ -102,6 +102,7 @@ std::string CommandHandler::handle_rpush(const Command &cmd) const {
   const std::vector values(cmd.args.begin() + 1, cmd.args.end());
 
   const std::size_t length = store_.rpush(key, values);
+  blocking_manager_.serve_blpop_waiters(key, store_);
   return ":" + std::to_string(length) + "\r\n";
 }
 
@@ -112,6 +113,7 @@ std::string CommandHandler::handle_lpush(const Command &cmd) const {
   const std::vector values(cmd.args.begin() + 1, cmd.args.end());
 
   const std::size_t length = store_.lpush(key, values);
+  blocking_manager_.serve_blpop_waiters(key, store_);
   return ":" + std::to_string(length) + "\r\n";
 }
 
@@ -208,7 +210,7 @@ void CommandHandler::handle_blpop(const Command &cmd, const asio::any_io_executo
 
   // Use a shared pointer to store the callback ID so it can be captured by both the BLPOP callback and the timer callback.
   auto id_ptr = std::make_shared<uint64_t>(0);
-  *id_ptr = store_.register_blpop(keys, [on_reply, timer](const std::string &key, const std::string &value) {
+  *id_ptr = blocking_manager_.register_blpop(keys, [on_reply, timer](const std::string &key, const std::string &value) {
     timer->cancel();
     std::string response = "*2\r\n$" + std::to_string(key.size()) + "\r\n" + key + "\r\n";
     response += "$" + std::to_string(value.size()) + "\r\n" + value + "\r\n";
@@ -220,7 +222,7 @@ void CommandHandler::handle_blpop(const Command &cmd, const asio::any_io_executo
   // and return a RESP Null array.
   timer->async_wait([this, id_ptr, on_reply](const asio::error_code& ec) {
     if (!ec) {
-      store_.unregister_blpop(*id_ptr);
+      blocking_manager_.unregister_blpop(*id_ptr);
       on_reply("*-1\r\n");
     }
   });
