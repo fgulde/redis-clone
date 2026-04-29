@@ -42,14 +42,14 @@ std::optional<RespValue> RespParser::parse_value(const std::string_view input, s
 }
 
 std::optional<RespValue> RespParser::parse_simple_string(const std::string_view input, std::size_t &pos) {
-  auto line = read_line(input, pos);
+  const auto line = read_line(input, pos);
   if (!line) return std::nullopt;
 
   return RespValue{ RespValue::Type::SimpleString, std::string(*line), {} };
 }
 
 std::optional<RespValue> RespParser::parse_integer(const std::string_view input, std::size_t &pos) {
-  auto line = read_line(input, pos);
+  const auto line = read_line(input, pos);
   if (!line) return std::nullopt;
 
   return RespValue{ RespValue::Type::Integer, std::string(*line), {} };
