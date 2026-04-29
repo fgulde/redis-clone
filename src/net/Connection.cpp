@@ -3,13 +3,11 @@
 //
 
 #include "Connection.hpp"
+#include "../util/Logger.hpp"
 
 #include <iostream>
-#include <print>
 
 using namespace std::string_view_literals;
-
-inline bool g_logging_enabled = true;
 
 Connection::Connection(tcp::socket socket, Store &store, BlockingManager &blocking_manager)
   : socket_(std::move(socket))
@@ -31,11 +29,12 @@ void Connection::do_read() {
   // ReSharper disable once CppLambdaCaptureNeverUsed
   [this, self](const asio::error_code error, std::size_t /*bytes_transferred*/) {
   if (error == asio::error::eof) {
-    if (g_logging_enabled) std::println("Client disconnected");
+    Logger::log("Client disconnected");
     return;
   }
   if (error) {
-    std::println(stderr, "Read error: {}", error.message());
+    // Replaced std::println with std::cerr due to missing <print> support in CI
+    std::cerr << "Read error: " << error.message() << '\n';
     return;
   }
 

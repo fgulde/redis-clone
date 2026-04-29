@@ -3,11 +3,10 @@
 //
 
 #include <gtest/gtest.h>
-
-extern bool g_logging_enabled;
+#include "../src/util/Logger.hpp"
 
 int main(int argc, char** argv) {
-  g_logging_enabled = false;
+  Logger::setEnabled(false);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
