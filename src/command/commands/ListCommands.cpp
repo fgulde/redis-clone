@@ -2,6 +2,8 @@
 // Created by fguld on 4/29/2026.
 //
 
+#include <format>
+
 #include "ListCommands.hpp"
 #include "../../util/CommandUtils.hpp"
 
@@ -17,7 +19,7 @@ void RPushCommand::execute(const Command& cmd, const asio::any_io_executor&,
 
   const std::size_t length = store_.rpush(key, values);
   blocking_manager_.serve_blpop_waiters(key, store_);
-  on_reply(":" + std::to_string(length) + "\r\n");
+  on_reply(std::format(":{}\r\n", length));
 }
 
 void LPushCommand::execute(const Command& cmd, const asio::any_io_executor&,
@@ -32,7 +34,7 @@ void LPushCommand::execute(const Command& cmd, const asio::any_io_executor&,
 
   const std::size_t length = store_.lpush(key, values);
   blocking_manager_.serve_blpop_waiters(key, store_);
-  on_reply(":" + std::to_string(length) + "\r\n");
+  on_reply(std::format(":{}\r\n", length));
 }
 
 void LRangeCommand::execute(const Command& cmd, const asio::any_io_executor&,
@@ -48,9 +50,9 @@ void LRangeCommand::execute(const Command& cmd, const asio::any_io_executor&,
 
   const auto values = store_.lrange(key, start, stop);
 
-  std::string response = "*" + std::to_string(values.size()) + "\r\n";
+  std::string response = std::format("*{}\r\n", values.size());
   for (const auto& value : values) {
-    response += "$" + std::to_string(value.size()) + "\r\n" + value + "\r\n";
+    response += std::format("${}\r\n{}\r\n", value.size(), value);
   }
   on_reply(response);
 }
@@ -64,7 +66,7 @@ void LLenCommand::execute(const Command& cmd, const asio::any_io_executor&,
 
   const std::string& key = cmd.args[0];
   const std::size_t length = store_.llen(key);
-  on_reply(":" + std::to_string(length) + "\r\n");
+  on_reply(std::format(":{}\r\n", length));
 }
 
 void LPopCommand::execute(const Command& cmd, const asio::any_io_executor&,
@@ -87,12 +89,12 @@ void LPopCommand::execute(const Command& cmd, const asio::any_io_executor&,
   // If count was not explicitly given, return a single bulk string instead of an array
   if (cmd.args.size() < 2) {
     const auto& val = values->front();
-    on_reply("$" + std::to_string(val.size()) + "\r\n" + val + "\r\n");
+    on_reply(std::format("${}\r\n{}\r\n", val.size(), val));
   } else {
     // Otherwise return a RESP array
     std::string response = "*" + std::to_string(values->size()) + "\r\n";
     for (const auto& val : *values) {
-      response += "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
+      response += std::format("${}\r\n{}\r\n", val.size(), val);
     }
     on_reply(response);
   }
@@ -113,10 +115,9 @@ void BlpopCommand::execute(const Command& cmd, const asio::any_io_executor& exec
   for (const auto& key : keys) {
     // Returns std::nullopt if the kye does not exist, so we can treat non-existent keys as empty lists.
     if (const auto values = store_.lpop(key, 1)) {
-      std::string response = "*2\r\n$" + std::to_string(key.size()) + "\r\n" + key + "\r\n";
       const auto& val = (*values)[0];
-      response += "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
-      on_reply(response);
+      on_reply(std::format("*2\r\n${}\r\n{}\r\n${}\r\n{}\r\n",
+                       key.size(), key, val.size(), val));
       return;
     }
   }
@@ -134,9 +135,7 @@ void BlpopCommand::execute(const Command& cmd, const asio::any_io_executor& exec
   auto id_ptr = std::make_shared<uint64_t>(0);
   *id_ptr = blocking_manager_.register_blpop(keys, [on_reply, timer](const std::string &key, const std::string &value) {
     timer->cancel();
-    std::string response = "*2\r\n$" + std::to_string(key.size()) + "\r\n" + key + "\r\n";
-    response += "$" + std::to_string(value.size()) + "\r\n" + value + "\r\n";
-    on_reply(response);
+    on_reply(std::format("*2\r\n${}\r\n{}\r\n${}\r\n{}\r\n", key.size(), key, value.size(), value));
   });
 
   // Set up the timer callback to handle the timeout case.

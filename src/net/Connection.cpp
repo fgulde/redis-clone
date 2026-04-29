@@ -5,6 +5,9 @@
 #include "Connection.hpp"
 
 #include <iostream>
+#include <print>
+
+using namespace std::string_view_literals;
 
 inline bool g_logging_enabled = true;
 
@@ -28,11 +31,11 @@ void Connection::do_read() {
   // ReSharper disable once CppLambdaCaptureNeverUsed
   [this, self](const asio::error_code error, std::size_t /*bytes_transferred*/) {
   if (error == asio::error::eof) {
-    if (g_logging_enabled) std::cout << "Client disconnected\n";
+    if (g_logging_enabled) std::println("Client disconnected");
     return;
   }
   if (error) {
-    std::cerr << "Read error: " << error.message() << "\n";
+    std::println(stderr, "Read error: {}", error.message());
     return;
   }
 
@@ -47,7 +50,7 @@ void Connection::do_read() {
   const auto command = parser_.parse(request);
 
   if (!command) {
-    asio::write(socket_, asio::buffer(std::string("-ERR parse error\r\n")));
+    asio::write(socket_, asio::buffer("-ERR parse error\r\n"sv));
     do_read();
   } else {
     // Process the RespValue to a Command and handle it asynchronously

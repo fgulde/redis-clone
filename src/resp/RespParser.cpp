@@ -5,6 +5,7 @@
 #include "RespParser.hpp"
 
 #include <ranges>
+#include <charconv>
 
 /**
  * Helper function to read a line terminated by \r\n from the input string, starting at the given position.
@@ -13,11 +14,11 @@
  * @param pos Current position in the input string (will be updated to point after the line)
  * @return The line read from the input, or std::nullopt if no complete line is available
  */
-static std::optional<std::string> read_line(const std::string_view input, std::size_t& pos) {
+static std::optional<std::string_view> read_line(const std::string_view input, std::size_t& pos) {
   const auto end = input.find("\r\n", pos);
   if (end == std::string_view::npos) return std::nullopt;
 
-  std::string line(input.substr(pos, end - pos));
+  std::string_view line = input.substr(pos, end - pos);
   pos = end + 2; // Move past \r\n
   return line;
 }
@@ -44,21 +45,22 @@ std::optional<RespValue> RespParser::parse_simple_string(const std::string_view 
   auto line = read_line(input, pos);
   if (!line) return std::nullopt;
 
-  return RespValue{ RespValue::Type::SimpleString, std::move(*line), {} };
+  return RespValue{ RespValue::Type::SimpleString, std::string(*line), {} };
 }
 
 std::optional<RespValue> RespParser::parse_integer(const std::string_view input, std::size_t &pos) {
   auto line = read_line(input, pos);
   if (!line) return std::nullopt;
 
-  return RespValue{ RespValue::Type::Integer, std::move(*line), {} };
+  return RespValue{ RespValue::Type::Integer, std::string(*line), {} };
 }
 
 std::optional<RespValue> RespParser::parse_bulk_string(const std::string_view input, std::size_t &pos) {
   const auto line = read_line(input, pos);
   if (!line) return std::nullopt;
 
-  const int length = std::stoi(*line);
+  int length = 0;
+  std::from_chars(line->data(), line->data() + line->size(), length);
   if (length < 0) {
     return RespValue{ RespValue::Type::Null, {}, {} };
   }
@@ -73,7 +75,8 @@ std::optional<RespValue> RespParser::parse_array(const std::string_view input, s
   const auto line = read_line(input, pos); // Read the array length
   if (!line) return std::nullopt;
 
-  const int count = std::stoi(*line); // Convert array length to an integer
+  int count = 0;
+  std::from_chars(line->data(), line->data() + line->size(), count); // Convert array length to an integer
   if (count == -1) {
     return RespValue{ RespValue::Type::Null, {}, {} };
   }

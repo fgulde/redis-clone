@@ -33,6 +33,6 @@ void CommandHandler::handle(const RespValue& request, const asio::any_io_executo
   if (const auto* command_impl = registry_.find(cmd.type)) {
     command_impl->execute(cmd, executor, on_reply);
   } else {
-    on_reply("-ERR unknown command " + cmd.name + "\r\n");
+    on_reply(std::format("-ERR unknown command '{}'\r\n", cmd.name));
   }
 }

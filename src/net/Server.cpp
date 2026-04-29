@@ -2,7 +2,7 @@
 // Created by fguld on 4/10/2026.
 //
 
-#include <iostream>
+#include <print>
 
 #include "Server.hpp"
 #include "../net/Connection.hpp"
@@ -22,10 +22,10 @@ void Server::do_accept() {
   acceptor_.async_accept(
     [this](const asio::error_code error, tcp::socket socket) {
       if (!error) {
-        if (g_logging_enabled) std::cout << "Client connected\n";
+        if (g_logging_enabled) std::println("Client connected");
         std::make_shared<Connection>(std::move(socket), store_, blocking_manager_)->start();
       } else {
-        std::cerr << "Accept error: " << error.message() << "\n";
+        std::println(stderr, "Accept error: {}", error.message());
       }
       do_accept(); // Accept the next connection
     });
