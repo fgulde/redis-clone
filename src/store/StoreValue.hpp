@@ -9,6 +9,7 @@
 #include <deque>
 #include <optional>
 #include <chrono>
+#include "types/Stream.hpp"
 
 /**
  * Represents the type of value stored in Redis.
@@ -42,12 +43,13 @@ struct StoreValue {
   using TimePoint = Clock::time_point;
 
   /// The value can be a string, a list of strings, or other types as needed.
-  std::variant<std::string, std::deque<std::string>> value;
+  std::variant<std::string, std::deque<std::string>, Stream> value;
   std::optional<TimePoint> expires_at;
 
   [[nodiscard]] StoreType type() const {
     if (std::holds_alternative<std::string>(value)) return {StoreType::Type::String};
     if (std::holds_alternative<std::deque<std::string>>(value)) return {StoreType::Type::List};
+    if (std::holds_alternative<Stream>(value)) return {StoreType::Type::Stream};
     return {StoreType::Type::None};
   }
 };

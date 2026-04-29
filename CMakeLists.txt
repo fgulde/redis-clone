@@ -24,6 +24,14 @@ enable_testing() # Enable CTest support
 add_library(redis_lib STATIC
         src/command/CommandHandler.cpp
         src/command/CommandHandler.hpp
+        src/command/CommandRegistry.cpp
+        src/command/CommandRegistry.hpp
+        src/command/ICommand.hpp
+        src/util/CommandUtils.hpp
+        src/command/commands/BasicCommands.cpp
+        src/command/commands/BasicCommands.hpp
+        src/command/commands/ListCommands.cpp
+        src/command/commands/ListCommands.hpp
         src/net/Connection.cpp
         src/net/Connection.hpp
         src/net/Server.cpp

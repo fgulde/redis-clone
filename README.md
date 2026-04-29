@@ -70,7 +70,10 @@ To build and run the test suite (using GTest and CTest), use:
 
 ## Architecture & Interaction
 
-The following diagram illustrates how the core components interact to process a client request:
+To enforce separation of concerns, the architecture is decoupled into two primary areas: network I/O and command execution.
+
+### 1. System & Networking
+This layer manages the async event loop, individual client connections, and RESP protocol parsing.
 
 ```mermaid
 classDiagram
@@ -90,29 +93,50 @@ classDiagram
         + parse(buffer) RespValue
     }
     class CommandHandler {
-        + handle(request, executor, on_reply)
+        + handle(...)
     }
-    class Store {
-        + set(key, value, ttl)
-        + get(key)
-        + type(key)
-        + rpush(key, values)
-        + lpush(key, values)
-        + lpop(key, count)
-    }
-    class BlockingManager {
-        + register_blpop(keys, callback)
-        + unregister_blpop(id)
-        + serve_blpop_waiters(key, store)
-    }
+    class Store
+    class BlockingManager
     
-    Server "1" *-- "1" Store : owns single instance
-    Server "1" *-- "1" BlockingManager : owns single instance
-    Server "1" --> "*" Connection : creates for each client
+    Server "1" *-- "1" Store : owns
+    Server "1" *-- "1" BlockingManager : owns
+    Server "1" --> "*" Connection : creates
     Connection "1" *-- "1" RespParser : owns
     Connection "1" *-- "1" CommandHandler : owns
-    CommandHandler "*" --> "1" Store : references shared store
-    CommandHandler "*" --> "1" BlockingManager : references shared blocking manager
+    CommandHandler "*" --> "1" Store : references
+    CommandHandler "*" --> "1" BlockingManager : references
+```
+
+### 2. Command Dispatch
+Incoming parsed requests are routed using a Command Pattern, ensuring the system remains easily extensible when adding new Redis commands.
+
+```mermaid
+classDiagram
+    class CommandHandler {
+        - registry_
+        + handle(request, executor, on_reply)
+    }
+    class CommandRegistry {
+        - commands_
+        + register_command(type, command)
+        + find(type)
+    }
+    class ICommand {
+        <<interface>>
+        + execute(cmd, executor, on_reply)*
+    }
+    class Store {
+        + set(...)
+        + get(...)
+    }
+    class SetCommand
+    class BlpopCommand
+    
+    CommandHandler "1" *-- "1" CommandRegistry : owns
+    CommandRegistry "1" *-- "*" ICommand : manages
+    ICommand <|-- SetCommand : implements
+    ICommand <|-- BlpopCommand : implements
+    ICommand "*" --> "1" Store : accesses
 ```
 
 ## Project Structure
@@ -122,7 +146,13 @@ src/
 ├── command/
 │   ├── Command.hpp           # Command struct and type enum
 │   ├── CommandHandler.hpp
-│   └── CommandHandler.cpp    # Parses and dispatches Redis commands
+│   ├── CommandHandler.cpp    # Processes requests via the registry
+│   ├── CommandRegistry.hpp
+│   ├── CommandRegistry.cpp   # Maps command types to target implementations
+│   ├── ICommand.hpp          # Abstract base for executable commands
+│   └── commands/             # Concrete command implementations
+│       ├── BasicCommands.hpp # PING, SET, GET, ECHO, etc.
+│       └── ListCommands.hpp  # LPUSH, RPUSH, BLPOP, etc.
 ├── net/
 │   ├── Server.hpp
 │   ├── Server.cpp            # Async TCP acceptor, manages connections
