@@ -2,6 +2,8 @@
 // Created by fguld on 4/29/2026.
 //
 
+#include <format>
+
 #include "BasicCommands.hpp"
 #include "../../util/CommandUtils.hpp"
 
@@ -10,7 +12,7 @@ void PingCommand::execute(const Command& cmd, const asio::any_io_executor&,
   // Optional Ping message argument
   if (!cmd.args.empty()) {
     const std::string& msg = cmd.args[0];
-    on_reply("$" + std::to_string(msg.size()) + "\r\n" + msg + "\r\n");
+    on_reply(std::format("${}\r\n{}\r\n", msg.size(), msg));
   } else {
     on_reply("+PONG\r\n");
   }
@@ -23,7 +25,7 @@ void EchoCommand::execute(const Command& cmd, const asio::any_io_executor&,
     return;
   }
   const std::string& msg = cmd.args[0];
-  on_reply("$" + std::to_string(msg.size()) + "\r\n" + msg + "\r\n");
+  on_reply(std::format("${}\r\n{}\r\n", msg.size(), msg));
 }
 
 void SetCommand::execute(const Command& cmd, const asio::any_io_executor&,
@@ -57,7 +59,7 @@ void GetCommand::execute(const Command& cmd, const asio::any_io_executor&,
   if (const auto value = store_.get(cmd.args[0]); !value) {
     on_reply("$-1\r\n"); // RESP Null bulk string
   } else {
-    on_reply("$" + std::to_string(value->size()) + "\r\n" + *value + "\r\n");
+    on_reply(std::format("${}\r\n{}\r\n", value->size(), *value));
   }
 }
 
@@ -71,5 +73,5 @@ void TypeCommand::execute(const Command& cmd, const asio::any_io_executor&,
   const std::string& key = cmd.args[0];
   const auto type = store_.type(key);
 
-  on_reply("+" + type.to_string() + "\r\n");
+  on_reply(std::format("+{}\r\n", type.to_string()));
 }

@@ -10,6 +10,7 @@
 #include <latch>
 #include <vector>
 #include <string>
+#include <format>
 #include "../helpers/test_server.hpp"
 #include "../helpers/test_client.hpp"
 
@@ -57,14 +58,14 @@ TEST(ConcurrentTest, ConcurrentSetGetDoNotCrossTalk) {
             TestClient client(server.port()); // create the client connection for every thread
 
             // Create a unique key-value pair for this thread to set and get.
-            const std::string key = "key_" + std::to_string(i);
-            const std::string val = "val_" + std::to_string(i);
+            const std::string key = std::format("key_{}", i);
+            const std::string val = std::format("val_{}", i);
 
             latch.count_down();
             latch.wait(); // wait for all threads to be ready before starting the test
 
             client.set(key, val);
-            const std::string expected = "$" + std::to_string(val.size()) + "\r\n" + val + "\r\n";
+            const std::string expected = std::format("${}\r\n{}\r\n", val.size(), val);
             for (int j = 0; j < 20; ++j) {
                 if (client.get(key) != expected) {
                     results[i] = false;

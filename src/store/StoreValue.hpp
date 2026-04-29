@@ -11,6 +11,8 @@
 #include <chrono>
 #include "types/Stream.hpp"
 
+using namespace std::literals;
+
 /**
  * Represents the type of value stored in Redis.
  */
@@ -19,18 +21,18 @@ struct StoreType {
 
   Type type{ Type::None };
 
-  [[nodiscard]] std::string to_string() const {
+  [[nodiscard]] std::string_view to_string() const {
     switch (type) {
-      case Type::String: return "string";
-      case Type::List: return "list";
-      case Type::Set: return "set";
-      case Type::ZSet: return "zset";
-      case Type::Hash: return "hash";
-      case Type::Stream: return "stream";
-      case Type::VectorSet: return "vectorset";
-      case Type::None: return "none";
+      case Type::String: return "string"sv;
+      case Type::List: return "list"sv;
+      case Type::Set: return "set"sv;
+      case Type::ZSet: return "zset"sv;
+      case Type::Hash: return "hash"sv;
+      case Type::Stream: return "stream"sv;
+      case Type::VectorSet: return "vectorset"sv;
+      case Type::None: return "none"sv;
     }
-    return "none";
+    return "none"sv;
   }
 };
 

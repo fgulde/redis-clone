@@ -8,6 +8,7 @@
 #include <optional>
 #include <vector>
 #include <chrono>
+#include <format>
 #include "../command/Command.hpp"
 #include "StringUtils.hpp"
 
@@ -22,9 +23,9 @@ namespace command_utils {
  * @param min_args Minimum number of arguments required for the command (not counting the command name itself).
  * @return std::nullopt if the command satisfies the argument count requirement, or an error message string if it does not.
  */
-inline std::optional<std::string> check_args(const Command& cmd, std::size_t min_args) {
+inline std::optional<std::string> check_args(const Command& cmd, const std::size_t min_args) {
   if (cmd.args.size() < min_args) {
-    return "-ERR wrong number of arguments for '" + cmd.name + "' command\r\n";
+    return std::format("-ERR wrong number of arguments for '{}' command\r\n", cmd.name);
   }
   return std::nullopt;
 }

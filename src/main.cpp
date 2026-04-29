@@ -1,5 +1,6 @@
-#include <iostream>
 #include <asio.hpp>
+#include <iostream>
+#include <print>
 #include "net/Server.hpp"
 
 int main() {
@@ -11,6 +12,6 @@ int main() {
 
   server.run();
 
-  std::cout << "Server is running on port 6379...\n";
+  std::println("Server is running on port 6379...");
   io_context.run(); // Blocks until all operations are complete
 }
