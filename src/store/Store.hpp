@@ -32,7 +32,7 @@ public:
    * @return The value associated with the key, or std::nullopt if the key does not exist or has expired.
    * @note Expired entries are lazily deleted on access.
    */
-  std::optional<std::string> get(std::string_view key);
+  auto get(std::string_view key) -> std::optional<std::string>;
 
   /**
    * @brief Appends values to a list stored at a key. If the key does not exist, it is created as an empty list before appending.
@@ -40,7 +40,7 @@ public:
    * @param values The values to append to the list.
    * @return The length of the list after the push operation.
    */
-  std::size_t rpush(std::string_view key, const std::vector<std::string>& values);
+  auto rpush(std::string_view key, const std::vector<std::string>& values) -> std::size_t;
 
   /**
    * @brief Prepends values to a list stored at a key. If the key does not exist, it is created as an empty list before prepending.
@@ -48,7 +48,7 @@ public:
    * @param values The values to prepend to the list.
    * @return The length of the list after the push operation.
    */
-  std::size_t lpush(std::string_view key, const std::vector<std::string>& values);
+  auto lpush(std::string_view key, const std::vector<std::string>& values) -> std::size_t;
 
   /**
    * @brief Returns a subrange of the list stored at a key.
@@ -58,14 +58,14 @@ public:
    * @return The requested elements, or an empty vector if the key does not exist,
    *         start >= list size, or start > stop.
    */
-  std::vector<std::string> lrange(std::string_view key, long long start, long long stop) const;
+  auto lrange(std::string_view key, long long start, long long stop) const -> std::vector<std::string>;
 
   /**
    * @brief Returns the length of the list stored at a key.
    * @param key The key of the list to check.
    * @return The length of the list stored at the key, or 0 if the key does not exist or is not a list.
    */
-  std::size_t llen(std::string_view key) const;
+  auto llen(std::string_view key) const -> std::size_t;
 
   /**
    * @brief Removes and returns up to `count` elements from the front of the list.
@@ -74,14 +74,14 @@ public:
    * @return The removed elements, or std::nullopt if the key does not exist.
    * If the count exceeds the list size, all elements are removed and returned.
    */
-  std::optional<std::vector<std::string>> lpop(std::string_view key, std::size_t count = 1);
+  auto lpop(std::string_view key, std::size_t count = 1) -> std::optional<std::vector<std::string>>;
 
   /**
    * @brief Returns the type of the value stored at a key.
    * @param key The key to check.
    * @return The type of the value, or None if the key does not exist.
    */
-  StoreType type(std::string_view key);
+  auto type(std::string_view key) -> StoreType;
 
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes

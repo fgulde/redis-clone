@@ -16,11 +16,13 @@
 
 using namespace std::chrono_literals;
 
-class BlpopTest : public ::testing::Test {
-protected:
-    TestServer server;
-    TestClient client{server.port()};
-};
+namespace {
+    class BlpopTest : public ::testing::Test {
+    protected:
+        TestServer server;
+        TestClient client{server.port()};
+    };
+}
 
 TEST_F(BlpopTest, ReturnsImmediatelyIfListHasElements) {
     std::vector<std::string_view> elements{"a"};
@@ -29,7 +31,7 @@ TEST_F(BlpopTest, ReturnsImmediatelyIfListHasElements) {
 }
 
 TEST_F(BlpopTest, BlocksAndReturnsWhenElementPushed) {
-    std::jthread pusher([&]() {
+    std::jthread const pusher([&]() -> void {
         std::this_thread::sleep_for(50ms);
         TestClient t_client{server.port()};
         std::vector<std::string_view> elements{"b"};
@@ -48,10 +50,10 @@ TEST_F(BlpopTest, RpushReturnsCorrectLengthWhenUnblocking) {
     std::condition_variable cv;
     int ready_clients = 0;
 
-    auto make_waiting_client = [&]() {
+    auto make_waiting_client = [&]() -> void {
         TestClient t_client{server.port()};
         {
-            std::lock_guard lock(mtx);
+            std::scoped_lock const lock(mtx);
             ready_clients++;
         }
         cv.notify_one();
@@ -59,13 +61,13 @@ TEST_F(BlpopTest, RpushReturnsCorrectLengthWhenUnblocking) {
         t_client.blpop({"apple", "0"});
     };
 
-    std::jthread c1(make_waiting_client);
-    std::jthread c2(make_waiting_client);
+    std::jthread const c1(make_waiting_client);
+    std::jthread const c2(make_waiting_client);
 
     // Wait until both threads are up and sent their commands
     {
         std::unique_lock lock(mtx);
-        cv.wait(lock, [&]{ return ready_clients == 2; });
+        cv.wait(lock, [&] -> bool { return ready_clients == 2; });
     }
     // Give the server a brief moment to actually process the incoming BLPOP requests
     std::this_thread::sleep_for(50ms);

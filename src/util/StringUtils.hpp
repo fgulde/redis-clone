@@ -13,7 +13,7 @@ namespace string_utils {
    * @param c A single character to convert to lowercase if it's an uppercase letter. Non-uppercase letters are returned unchanged.
    * @return Lowercase character.
    */
-  inline char to_lower(const char c) {
+  inline auto to_lower(const char c) -> char {
     return (c >= 'A' && c <= 'Z') ? static_cast<char>(c + ('a' - 'A')) : c;
   }
 
@@ -22,7 +22,7 @@ namespace string_utils {
    * @param str String to convert to lowercase.
    * @return A new std::string containing the lowercase version of the input string.
    */
-  inline std::string lowercase(const std::string_view str) {
+  inline auto lowercase(const std::string_view str) -> std::string {
     std::string result(str.size(), '\0');
     std::ranges::transform(str, result.begin(), to_lower);
     return result;

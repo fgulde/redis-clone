@@ -21,7 +21,7 @@ public:
    * @param input Input string to parse
    * @return Parsed RespValue, or std::nullopt if parsing failed
    */
-  std::optional<RespValue> parse(std::string_view input);
+  auto parse(std::string_view input) -> std::optional<RespValue>;
 
 private:
   /**
@@ -32,9 +32,9 @@ private:
    * @param pos Current position in the input string (will be updated as parsing progresses)
    * @return Parsed RespValue, or std::nullopt if parsing failed
    */
-  std::optional<RespValue> parse_value(std::string_view input, std::size_t& pos);
-  static std::optional<RespValue> parse_simple_string(std::string_view input, std::size_t& pos);
-  static std::optional<RespValue> parse_integer(std::string_view input, std::size_t& pos);
-  static std::optional<RespValue> parse_bulk_string(std::string_view input, std::size_t& pos);
-  std::optional<RespValue> parse_array(std::string_view input, std::size_t& pos);
+  auto parse_value(std::string_view input, std::size_t& pos) -> std::optional<RespValue>;
+  static auto parse_simple_string(std::string_view input, std::size_t &pos) -> std::optional<RespValue>;
+  static auto parse_integer(std::string_view input, std::size_t& pos) -> std::optional<RespValue>;
+  static auto parse_bulk_string(std::string_view input, std::size_t& pos) -> std::optional<RespValue>;
+  auto parse_array(std::string_view input, std::size_t& pos) -> std::optional<RespValue>;
 };

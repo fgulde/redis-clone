@@ -7,14 +7,14 @@
 CommandHandler::CommandHandler(Store &store, BlockingManager &blocking_manager) 
     : registry_(build_registry(store, blocking_manager)) {}
 
-Command CommandHandler::parse_command(const RespValue &request) {
+auto CommandHandler::parse_command(const RespValue &request) -> Command {
   Command cmd;
-  cmd.type = Command::parse_type(request.elements[0].str);
-  cmd.name = request.elements[0].str;
+  cmd.type = Command::parse_type(request.elements.at(0).str);
+  cmd.name = request.elements.at(0).str;
 
   cmd.args.reserve(request.elements.size() - 1);
   for (std::size_t i = 1; i < request.elements.size(); ++i) {
-    cmd.args.push_back(request.elements[i].str);
+    cmd.args.push_back(request.elements.at(i).str);
   }
 
   return cmd;

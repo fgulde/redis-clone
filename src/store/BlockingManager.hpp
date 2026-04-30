@@ -20,7 +20,7 @@ public:
   /**
    * @brief Registers a callback for BLPOP. Returns a unique ID for the registration.
    */
-  uint64_t register_blpop(const std::vector<std::string>& keys, const BlpopCallback &cb);
+  auto register_blpop(const std::vector<std::string>& keys, const BlpopCallback &cb) -> uint64_t;
 
   /**
    * @brief Unregisters a BLPOP callback by its ID.

@@ -32,7 +32,7 @@ public:
    * @param type The command type.
    * @return A pointer to the command implementation, or nullptr if not found.
    */
-  [[nodiscard]] const ICommand* find(Command::Type type) const;
+  [[nodiscard]] auto find(Command::Type type) const -> const ICommand*;
 
 private:
   std::unordered_map<Command::Type, std::unique_ptr<ICommand>> commands_;
@@ -44,4 +44,4 @@ private:
  * @param blocking_manager Reference to the blocking manager.
  * @return A fully populated CommandRegistry.
  */
-CommandRegistry build_registry(Store& store, BlockingManager& blocking_manager);
+auto build_registry(Store& store, BlockingManager& blocking_manager) -> CommandRegistry;

@@ -11,7 +11,7 @@ The focus is on learning and understanding the internals of Redis.
 
 Areas of exploration include:
 
-- TCP networking & socket programming
+- TCP networking and socket programming
 - The RESP (Redis Serialization Protocol) wire format
 - Command parsing
 - In-memory data structures
@@ -27,7 +27,8 @@ Already implemented:
 - List commands (`RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`, `BLPOP`)
 - Key expiration via `EX` (seconds) and `PX` (milliseconds) flags on `SET`
 - Lazy deletion of expired keys on access
-- Async TCP server with per-client connections (`asio`) handles multiple concurrent clients
+- Multithreaded architecture (multi-reactor pattern): thread pool (`network_ctx`) handles async I/O, separated from a single-threaded lock-free store execution loop (`store_ctx`)
+- Support for customizable port via `--port` command line argument and `REDIS_PORT` environment variable
 - Modular architecture (networking, RESP parsing, command handling, storage)
 
 Planned:
@@ -55,6 +56,10 @@ To build and run the server locally, you can use the provided script:
 ```bash
 ./program.sh
 ```
+Or with a specific port:
+```bash
+./program.sh --port 6380
+```
 
 You can then connect with any Redis client:
 ```bash
@@ -73,11 +78,13 @@ To build and run the test suite (using GTest and CTest), use:
 To enforce separation of concerns, the architecture is decoupled into two primary areas: network I/O and command execution.
 
 ### 1. System & Networking
-This layer manages the async event loop, individual client connections, and RESP protocol parsing.
+This layer manages the async event loop, individual client connections, and RESP protocol parsing. A dedicated pool of I/O threads is used for connection handling, while command execution and State management run safely within a lock-free single background thread.
 
 ```mermaid
 classDiagram
     class Server {
+        - network_ctx_
+        - store_ctx_
         - acceptor_
         - store_
         - blocking_manager_
@@ -152,7 +159,9 @@ src/
 │   ├── ICommand.hpp          # Abstract base for executable commands
 │   └── commands/             # Concrete command implementations
 │       ├── BasicCommands.hpp # PING, SET, GET, ECHO, etc.
-│       └── ListCommands.hpp  # LPUSH, RPUSH, BLPOP, etc.
+│       ├── BasicCommands.cpp
+│       ├── ListCommands.hpp  # LPUSH, RPUSH, BLPOP, etc.
+│       └── ListCommands.cpp
 ├── net/
 │   ├── Server.hpp
 │   ├── Server.cpp            # Async TCP acceptor, manages connections
@@ -167,7 +176,11 @@ src/
 │   ├── Store.cpp             # In-memory key-value store with TTL support
 │   ├── StoreValue.hpp        # Data structures for stored values
 │   ├── BlockingManager.hpp
-│   └── BlockingManager.cpp   # Manages async waiting clients (BLPOP, etc.)
+│   ├── BlockingManager.cpp   # Manages async waiting clients (BLPOP, etc.)
+│   └── types/
+│       └── Stream.hpp        # Stream data structure
 └── util/
+    ├── CommandUtils.hpp      # Command parsing utilities
+    ├── Logger.hpp            # Simple logger implementation
     └── StringUtils.hpp       # String helper utilities
 ```

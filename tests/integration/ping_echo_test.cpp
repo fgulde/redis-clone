@@ -8,11 +8,13 @@
 #include "../helpers/test_server.hpp"
 #include "../helpers/test_client.hpp"
 
-class PingEchoTest : public ::testing::Test {
-protected:
-    TestServer server;
-    TestClient client{server.port()};
-};
+namespace {
+    class PingEchoTest : public ::testing::Test {
+    protected:
+        TestServer server;
+        TestClient client{server.port()};
+    };
+}
 
 TEST_F(PingEchoTest, SimplePingReturnsPong) {
     EXPECT_EQ(client.ping(), "+PONG\r\n");

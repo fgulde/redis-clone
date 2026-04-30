@@ -13,7 +13,7 @@ TEST(RespParserTest, ParsesSinglePingCommand) {
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 1);
-    EXPECT_EQ(result->elements[0].str, "PING");
+    EXPECT_EQ(result->elements.at(0).str, "PING");
 }
 
 TEST(RespParserTest, ParsesPingWithMessage) {
@@ -22,8 +22,8 @@ TEST(RespParserTest, ParsesPingWithMessage) {
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 2);
-    EXPECT_EQ(result->elements[0].str, "PING");
-    EXPECT_EQ(result->elements[1].str, "hello");
+    EXPECT_EQ(result->elements.at(0).str, "PING");
+    EXPECT_EQ(result->elements.at(1).str, "hello");
 }
 
 TEST(RespParserTest, ParsesEchoCommand) {
@@ -32,8 +32,8 @@ TEST(RespParserTest, ParsesEchoCommand) {
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 2);
-    EXPECT_EQ(result->elements[0].str, "ECHO");
-    EXPECT_EQ(result->elements[1].str, "testing");
+    EXPECT_EQ(result->elements.at(0).str, "ECHO");
+    EXPECT_EQ(result->elements.at(1).str, "testing");
 }
 
 TEST(RespParserTest, ParsesSetCommandWithExpiry) {
@@ -42,11 +42,11 @@ TEST(RespParserTest, ParsesSetCommandWithExpiry) {
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 5);
-    EXPECT_EQ(result->elements[0].str, "SET");
-    EXPECT_EQ(result->elements[1].str, "foo");
-    EXPECT_EQ(result->elements[2].str, "bar");
-    EXPECT_EQ(result->elements[3].str, "EX");
-    EXPECT_EQ(result->elements[4].str, "10");
+    EXPECT_EQ(result->elements.at(0).str, "SET");
+    EXPECT_EQ(result->elements.at(1).str, "foo");
+    EXPECT_EQ(result->elements.at(2).str, "bar");
+    EXPECT_EQ(result->elements.at(3).str, "EX");
+    EXPECT_EQ(result->elements.at(4).str, "10");
 }
 
 TEST(RespParserTest, ParsesRpushWithMultipleElements) {
@@ -55,11 +55,11 @@ TEST(RespParserTest, ParsesRpushWithMultipleElements) {
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 5);
-    EXPECT_EQ(result->elements[0].str, "RPUSH");
-    EXPECT_EQ(result->elements[1].str, "mylist");
-    EXPECT_EQ(result->elements[2].str, "a");
-    EXPECT_EQ(result->elements[3].str, "b");
-    EXPECT_EQ(result->elements[4].str, "c");
+    EXPECT_EQ(result->elements.at(0).str, "RPUSH");
+    EXPECT_EQ(result->elements.at(1).str, "mylist");
+    EXPECT_EQ(result->elements.at(2).str, "a");
+    EXPECT_EQ(result->elements.at(3).str, "b");
+    EXPECT_EQ(result->elements.at(4).str, "c");
 }
 
 TEST(RespParserTest, MalformedInputThrowsOrReturnsError) {

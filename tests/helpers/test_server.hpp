@@ -15,40 +15,54 @@
 class TestServer {
 public:
     /**
-     * @brief Constructs a TestServer, starting it on an ephemeral port and running the IO context in a detached thread.
+     * @brief Constructs a TestServer, starting it on an ephemeral port and running the IO contexts in background threads.
      */
-    TestServer() : io_context_(), server_(std::make_unique<Server>(io_context_, 0)) {
+    TestServer() : network_ctx_(), store_ctx_(), server_(std::make_unique<Server>(network_ctx_, store_ctx_, 0)), port_(server_->port()) {
         server_->run();
-        port_ = server_->port();
-        thread_ = std::jthread([this]() {
-            io_context_.run();
+
+
+        // Ensure the store context doesn't exit immediately before work is posted to it
+        store_work_guard_ = std::make_unique<asio::executor_work_guard<asio::io_context::executor_type>>(store_ctx_.get_executor());
+
+        store_thread_ = std::jthread([this]() -> void {
+            store_ctx_.run();
+        });
+        network_thread_ = std::jthread([this]() -> void {
+            network_ctx_.run();
         });
     }
 
     TestServer(const TestServer&) = delete;
-    TestServer& operator=(const TestServer&) = delete;
+    auto operator=(const TestServer&) -> TestServer& = delete;
 
     TestServer(TestServer&&) = delete;
-    TestServer& operator=(TestServer&&) = delete;
+    auto operator=(TestServer&&) -> TestServer& = delete;
 
     /**
-     * @brief Destructs the TestServer, stopping the IO context and joining the background thread.
+     * @brief Destructs the TestServer, stopping the IO contexts and joining the background threads.
      */
     ~TestServer() {
-        io_context_.stop();
+        if (store_work_guard_) {
+            store_work_guard_ = nullptr;
+        }
+        network_ctx_.stop();
+        store_ctx_.stop();
     }
 
     /**
      * @brief Gets the ephemeral port on which the server is listening to.
      * @return The port number.
      */
-    [[nodiscard]] uint16_t port() const { return port_; }
+    [[nodiscard]] auto port() const -> uint16_t { return port_; }
 
 private:
-    asio::io_context io_context_;
+    asio::io_context network_ctx_;
+    asio::io_context store_ctx_;
+    std::unique_ptr<asio::executor_work_guard<asio::io_context::executor_type>> store_work_guard_;
     std::unique_ptr<Server> server_;
     uint16_t port_;
-    std::jthread thread_;
+    std::jthread store_thread_;
+    std::jthread network_thread_;
 };
 
 class RedisIntegrationTest : public ::testing::Test {

@@ -24,23 +24,23 @@ TEST(ConcurrentTest, ConcurrentPingsAllReturnPong) {
 
     std::vector<std::jthread> threads;
     for (int i = 0; i < kClients; ++i) {
-        threads.emplace_back([&, i] {
+        threads.emplace_back([&, i] -> void {
             TestClient client(server.port()); // create the client connection for every thread
             start_latch.count_down();
             start_latch.wait(); // wait for all threads to be ready before starting the test
             for (int j = 0; j < kPingsPerClient; ++j) {
                 // If one of the pings fails, mark this client's result as false.
                 if (client.ping() != "+PONG\r\n") {
-                    results[i] = false;
+                    results.at(i) = false;
                 }
             }
         });
     }
 
-    // jthreads join automatically when threads goes out of scope
+    // jthreads join automatically when threads go out of scope
     threads.clear();
 
-    for (bool ok : results) {
+    for (bool const ok : results) {
         EXPECT_TRUE(ok);
     }
 }
@@ -54,7 +54,7 @@ TEST(ConcurrentTest, ConcurrentSetGetDoNotCrossTalk) {
 
     std::vector<std::jthread> threads;
     for (int i = 0; i < kClients; ++i) {
-        threads.emplace_back([&, i] {
+        threads.emplace_back([&, i] -> void {
             TestClient client(server.port()); // create the client connection for every thread
 
             // Create a unique key-value pair for this thread to set and get.
@@ -68,7 +68,7 @@ TEST(ConcurrentTest, ConcurrentSetGetDoNotCrossTalk) {
             const std::string expected = std::format("${}\r\n{}\r\n", val.size(), val);
             for (int j = 0; j < 20; ++j) {
                 if (client.get(key) != expected) {
-                    results[i] = false;
+                    results.at(i) = false;
                 }
             }
         });
@@ -76,7 +76,7 @@ TEST(ConcurrentTest, ConcurrentSetGetDoNotCrossTalk) {
 
     threads.clear();
 
-    for (bool ok : results) {
+    for (bool const ok : results) {
         EXPECT_TRUE(ok);
     }
 }

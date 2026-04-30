@@ -10,14 +10,14 @@ void CommandRegistry::register_command(const Command::Type type, std::unique_ptr
   commands_[type] = std::move(command);
 }
 
-const ICommand* CommandRegistry::find(const Command::Type type) const {
+auto CommandRegistry::find(const Command::Type type) const -> const ICommand* {
   if (const auto it = commands_.find(type); it != commands_.end()) {
     return it->second.get();
   }
   return nullptr;
 }
 
-CommandRegistry build_registry(Store& store, BlockingManager& blocking_manager) {
+auto build_registry(Store& store, BlockingManager& blocking_manager) -> CommandRegistry {
   CommandRegistry registry;
 
   // Basic Commands

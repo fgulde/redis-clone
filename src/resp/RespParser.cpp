@@ -6,6 +6,7 @@
 
 #include <ranges>
 #include <charconv>
+#include <memory>
 
 /**
  * Helper function to read a line terminated by \r\n from the input string, starting at the given position.
@@ -14,25 +15,25 @@
  * @param pos Current position in the input string (will be updated to point after the line)
  * @return The line read from the input, or std::nullopt if no complete line is available
  */
-static std::optional<std::string_view> read_line(const std::string_view input, std::size_t& pos) {
+static auto read_line(const std::string_view input, std::size_t& pos) -> std::optional<std::string_view> {
   const auto end = input.find("\r\n", pos);
-  if (end == std::string_view::npos) return std::nullopt;
+  if (end == std::string_view::npos) { return std::nullopt; }
 
   std::string_view line = input.substr(pos, end - pos);
   pos = end + 2; // Move past \r\n
   return line;
 }
 
-std::optional<RespValue> RespParser::parse(const std::string_view input) {
-  if (input.empty()) return std::nullopt;
+auto RespParser::parse(const std::string_view input) -> std::optional<RespValue> {
+  if (input.empty()) { return std::nullopt; }
   std::size_t pos = 0;
   return parse_value(input, pos);
 }
 
-std::optional<RespValue> RespParser::parse_value(const std::string_view input, std::size_t &pos) {
-  if (pos >= input.size()) return std::nullopt;
+auto RespParser::parse_value(const std::string_view input, std::size_t &pos) -> std::optional<RespValue> {
+  if (pos >= input.size()) { return std::nullopt; }
 
-  switch (input[pos++]) {
+  switch (input.at(pos++)) {
     case '*': return parse_array(input, pos);
     case ':': return parse_integer(input, pos);
     case '$': return parse_bulk_string(input, pos);
@@ -41,44 +42,45 @@ std::optional<RespValue> RespParser::parse_value(const std::string_view input, s
   }
 }
 
-std::optional<RespValue> RespParser::parse_simple_string(const std::string_view input, std::size_t &pos) {
+auto RespParser::parse_simple_string(const std::string_view input, std::size_t &pos) -> std::optional<RespValue> {
   const auto line = read_line(input, pos);
-  if (!line) return std::nullopt;
+  if (!line) { return std::nullopt; }
 
-  return RespValue{ RespValue::Type::SimpleString, std::string(*line), {} };
+  return RespValue{ .type=RespValue::Type::SimpleString, .str=std::string(*line), .elements={} };
 }
 
-std::optional<RespValue> RespParser::parse_integer(const std::string_view input, std::size_t &pos) {
+auto RespParser::parse_integer(const std::string_view input, std::size_t &pos) -> std::optional<RespValue> {
   const auto line = read_line(input, pos);
-  if (!line) return std::nullopt;
+  if (!line) { return std::nullopt; }
 
-  return RespValue{ RespValue::Type::Integer, std::string(*line), {} };
+  return RespValue{ .type=RespValue::Type::Integer, .str=std::string(*line), .elements={} };
 }
 
-std::optional<RespValue> RespParser::parse_bulk_string(const std::string_view input, std::size_t &pos) {
+auto RespParser::parse_bulk_string(const std::string_view input, std::size_t &pos) -> std::optional<RespValue> {
   const auto line = read_line(input, pos);
-  if (!line) return std::nullopt;
+  if (!line) { return std::nullopt; }
 
   int length = 0;
-  std::from_chars(line->data(), line->data() + line->size(), length);
+  std::from_chars(std::to_address(line->begin()), std::to_address(line->end()), length);
   if (length < 0) {
-    return RespValue{ RespValue::Type::Null, {}, {} };
+    return RespValue{ .type=RespValue::Type::Null, .str={}, .elements={} };
   }
-  if (pos + length + 2 > input.size()) return std::nullopt; // Asio didn't receive enough data
+  if (pos + length + 2 > input.size()) { return std::nullopt; } // Asio didn't receive enough data
+
 
   std::string value(input.substr(pos, length));
   pos += length + 2; // Move past the string and \r\n
-  return RespValue{ RespValue::Type::BulkString, std::move(value), {} };
+  return RespValue{ .type=RespValue::Type::BulkString, .str=std::move(value), .elements={} };
 }
 
-std::optional<RespValue> RespParser::parse_array(const std::string_view input, std::size_t &pos) {
+auto RespParser::parse_array(const std::string_view input, std::size_t &pos) -> std::optional<RespValue> {
   const auto line = read_line(input, pos); // Read the array length
-  if (!line) return std::nullopt;
+  if (!line) { return std::nullopt; }
 
   int count = 0;
-  std::from_chars(line->data(), line->data() + line->size(), count); // Convert array length to an integer
+  std::from_chars(std::to_address(line->begin()), std::to_address(line->end()), count); // Convert array length to an integer
   if (count == -1) {
-    return RespValue{ RespValue::Type::Null, {}, {} };
+    return RespValue{ .type=RespValue::Type::Null, .str={}, .elements={} };
   }
 
   std::vector<RespValue> elements;
@@ -86,9 +88,9 @@ std::optional<RespValue> RespParser::parse_array(const std::string_view input, s
 
   for ([[maybe_unused]] auto _ : std::views::iota(0, count)) {
     auto element = parse_value(input, pos);
-    if (!element) return std::nullopt;
+    if (!element) { return std::nullopt; }
     elements.push_back(std::move(*element));
   }
 
-  return RespValue { RespValue::Type::Array, {}, std::move(elements) };
+  return RespValue { .type=RespValue::Type::Array, .str={}, .elements=std::move(elements) };
 }

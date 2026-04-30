@@ -7,15 +7,15 @@
 #include <ranges>
 
 void Store::set(const std::string_view key, std::string value) {
-  data_[std::string(key)] = StoreValue{ std::move(value), std::nullopt };
+  data_[std::string(key)] = StoreValue{ .value=std::move(value), .expires_at=std::nullopt };
 }
 
 void Store::set(const std::string_view key, std::string value, const std::chrono::milliseconds ttl) {
   auto expires_at = Clock::now() + ttl;
-  data_[std::string(key)] = StoreValue{ std::move(value), expires_at };
+  data_[std::string(key)] = StoreValue{ .value=std::move(value), .expires_at=expires_at };
 }
 
-std::optional<std::string> Store::get(const std::string_view key) {
+auto Store::get(const std::string_view key) -> std::optional<std::string> {
   const auto it = data_.find(std::string(key));
   if (it == data_.end()) {
     return std::nullopt;
@@ -31,7 +31,7 @@ std::optional<std::string> Store::get(const std::string_view key) {
   return std::nullopt; // Not a string
 }
 
-std::size_t Store::rpush(const std::string_view key, const std::vector<std::string> &values) {
+auto Store::rpush(const std::string_view key, const std::vector<std::string> &values) -> std::size_t {
   const std::string k(key);
 
   auto& store_val = data_[k];
@@ -49,7 +49,7 @@ std::size_t Store::rpush(const std::string_view key, const std::vector<std::stri
   return len;
 }
 
-std::size_t Store::lpush(const std::string_view key, const std::vector<std::string> &values) {
+auto Store::lpush(const std::string_view key, const std::vector<std::string> &values) -> std::size_t {
   const std::string k(key);
 
   auto& store_val = data_[k];
@@ -67,30 +67,30 @@ std::size_t Store::lpush(const std::string_view key, const std::vector<std::stri
   return len;
 }
 
-std::vector<std::string> Store::lrange(const std::string_view key, long long start, long long stop) const {
+auto Store::lrange(const std::string_view key, long long start, long long stop) const -> std::vector<std::string> {
   const auto it = data_.find(std::string(key));
-  if (it == data_.end()) return {};
+  if (it == data_.end()) { return {}; }
 
   const auto* list_ptr = std::get_if<std::deque<std::string>>(&it->second.value);
-  if (!list_ptr) return {};
+  if (list_ptr == nullptr) { return {}; }
 
   const auto& list = *list_ptr;
   const auto size = static_cast<long long>(list.size());
 
   // Resolve negative indices: -1 = last element, -2 = second to last, etc.
-  if (start < 0) start = std::max(0LL, start + size);
-  if (stop  < 0) stop  = stop + size;
+  if (start < 0) { start = std::max(0LL, start + size);  }
+  if (stop  < 0) { stop  = stop + size; }
 
-  if (start >= size || start > stop) return {};
+  if (start >= size || start > stop) { return {}; }
 
   const long long clamped_stop = std::min(stop, size - 1);
 
   return { list.begin() + start, list.begin() + clamped_stop + 1 };
 }
 
-std::size_t Store::llen(const std::string_view key) const {
+auto Store::llen(const std::string_view key) const -> std::size_t {
   const auto it = data_.find(std::string(key));
-  if (it == data_.end()) return 0;
+  if (it == data_.end()) { return 0; }
 
   if (const auto* list = std::get_if<std::deque<std::string>>(&it->second.value)) {
     return list->size();
@@ -98,12 +98,12 @@ std::size_t Store::llen(const std::string_view key) const {
   return 0;
 }
 
-std::optional<std::vector<std::string>> Store::lpop(const std::string_view key, const std::size_t count) {
+auto Store::lpop(const std::string_view key, const std::size_t count) -> std::optional<std::vector<std::string>> {
   const auto it = data_.find(std::string(key));
-  if (it == data_.end()) return std::nullopt;
+  if (it == data_.end()) { return std::nullopt; }
 
   auto* list_ptr = std::get_if<std::deque<std::string>>(&it->second.value);
-  if (!list_ptr) return std::nullopt;
+  if (list_ptr == nullptr) { return std::nullopt; }
 
   auto& list = *list_ptr;
   const std::size_t n = std::min(count, list.size());
@@ -118,7 +118,7 @@ std::optional<std::vector<std::string>> Store::lpop(const std::string_view key, 
   return result;
 }
 
-StoreType Store::type(const std::string_view key) {
+auto Store::type(const std::string_view key) -> StoreType {
   const auto it = data_.find(std::string(key));
   if (it == data_.end()) {
     return {StoreType::Type::None};

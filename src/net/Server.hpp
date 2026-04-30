@@ -18,16 +18,17 @@ using asio::ip::tcp;
  */
 class Server {
 public:
-  Server(asio::io_context& io_context, unsigned short port);
+  Server(asio::io_context& network_ctx, asio::io_context& store_ctx, unsigned short port);
   void run(); /// Public wrapper method for calling do_accept()
 
-  unsigned short port() const { return acceptor_.local_endpoint().port(); }
+  auto port() const -> unsigned short { return acceptor_.local_endpoint().port(); }
 
 private:
   void do_accept();
 
   Store store_; ///< Shared store for all connections
   BlockingManager blocking_manager_; ///< Shared blocking manager for all connections
-  asio::io_context& io_context_; ///< Reference to the io_context, which handles all operations
+  asio::io_context& network_ctx_; ///< Reference to the network io_context
+  asio::io_context& store_ctx_; ///< Reference to the store io_context
   tcp::acceptor acceptor_; ///< Listens and accepts incoming TCP connections
 };

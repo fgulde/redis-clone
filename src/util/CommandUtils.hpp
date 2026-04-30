@@ -23,7 +23,7 @@ namespace command_utils {
  * @param min_args Minimum number of arguments required for the command (not counting the command name itself).
  * @return std::nullopt if the command satisfies the argument count requirement, or an error message string if it does not.
  */
-inline std::optional<std::string> check_args(const Command& cmd, const std::size_t min_args) {
+inline auto check_args(const Command& cmd, const std::size_t min_args) -> std::optional<std::string> {
   if (cmd.args.size() < min_args) {
     return std::format("-ERR wrong number of arguments for '{}' command\r\n", cmd.name);
   }
@@ -36,16 +36,16 @@ inline std::optional<std::string> check_args(const Command& cmd, const std::size
  * @return Expiry duration, or std::nullopt if no expiry flag was given.
  * @note Supports EX (seconds) and PX (milliseconds) flags.
  */
-inline std::optional<std::chrono::milliseconds> parse_expiry(const Command& cmd) {
+inline auto parse_expiry(const Command& cmd) -> std::optional<std::chrono::milliseconds> {
   for (std::size_t i = 2; i + 1 < cmd.args.size(); i += 2) {
-    const auto option = string_utils::lowercase(cmd.args[i]);
+    const auto option = string_utils::lowercase(cmd.args.at(i));
 
     if (option == "ex") {
-      const long long seconds = std::stoll(cmd.args[i + 1]);
+      const long long seconds = std::stoll(cmd.args.at(i + 1));
       return std::chrono::milliseconds(seconds * 1000);
     }
     if (option == "px") {
-      const long long milliseconds = std::stoll(cmd.args[i + 1]);
+      const long long milliseconds = std::stoll(cmd.args.at(i + 1));
       return std::chrono::milliseconds(milliseconds);
     }
   }

@@ -2,8 +2,10 @@
 #include "../helpers/test_server.hpp"
 #include "../helpers/test_client.hpp"
 
-class TypeTest : public RedisIntegrationTest {
-};
+namespace {
+    class TypeTest : public RedisIntegrationTest {
+    };
+}
 
 TEST_F(TypeTest, StringType) {
     TestClient client(server_->port());

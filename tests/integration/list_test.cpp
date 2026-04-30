@@ -13,20 +13,20 @@
 
 
 // Simple parser for RESP arrays containing bulk strings to make assertions readable.
-auto parse_array = [](std::string_view resp) -> std::vector<std::string> {
+static const auto parse_array = [](std::string_view resp) -> std::vector<std::string> {
     std::vector<std::string> result;
-    if (resp.empty() || resp[0] != '*') return result;
+    if (resp.empty() || resp.at(0) != '*') { return result; }
     size_t pos = 1;
     size_t crlf = resp.find("\r\n", pos);
-    if (crlf == std::string_view::npos) return result;
+    if (crlf == std::string_view::npos) { return result; }
     const int num_elements = std::stoi(std::string(resp.substr(pos, crlf - pos)));
     pos = crlf + 2;
-    if (num_elements <= 0) return result;
+    if (num_elements <= 0) { return result; }
     for (int i = 0; i < num_elements; ++i) {
-        if (pos >= resp.size() || resp[pos] != '$') break;
+        if (pos >= resp.size() || resp.at(pos) != '$') { break; }
         pos++;
         crlf = resp.find("\r\n", pos);
-        if (crlf == std::string_view::npos) break;
+        if (crlf == std::string_view::npos) { break; }
         const int str_len = std::stoi(std::string(resp.substr(pos, crlf - pos)));
         pos = crlf + 2;
         if (str_len == -1) {
@@ -38,11 +38,14 @@ auto parse_array = [](std::string_view resp) -> std::vector<std::string> {
     }
     return result;
 };
-class ListTest : public ::testing::Test {
-protected:
-    TestServer server;
-    TestClient client{server.port()};
-};
+
+namespace {
+    class ListTest : public ::testing::Test {
+    protected:
+        TestServer server;
+        TestClient client{server.port()};
+    };
+}
 
 TEST_F(ListTest, RpushSingleElementReturnsLength) {
     std::vector<std::string_view> elements{"a"};
