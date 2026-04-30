@@ -39,6 +39,7 @@ auto build_registry(Store& store, BlockingManager& blocking_manager) -> CommandR
   // Stream Commands
   registry.register_command(Command::Type::XAdd, std::make_unique<XAddCommand>(store));
   registry.register_command(Command::Type::XRange, std::make_unique<XRangeCommand>(store));
+  registry.register_command(Command::Type::XRead, std::make_unique<XReadCommand>(store));
 
   return registry;
 }

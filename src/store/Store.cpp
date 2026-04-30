@@ -188,3 +188,44 @@ auto Store::xrange(const std::string_view key, const std::string_view start_id, 
 
   return result;
 }
+
+auto Store::xread(const std::vector<std::string_view>& keys, const std::vector<std::string_view>& ids) const -> std::vector<std::pair<std::string, std::vector<StreamEntry>>> {
+  std::vector<std::pair<std::string, std::vector<StreamEntry>>> result;
+
+  for (size_t i = 0; i < keys.size(); ++i) {
+    const std::string_view key = keys[i];
+    const std::string_view id = ids[i];
+
+    long long target_ms = 0;
+    uint64_t target_seq = 0;
+
+    // Attempt to parse ID. Handled like xrange lower bound, but exclusive.
+    // However, if the ID doesn't have '-', we must treat it properly.
+    // We can use parse_stream_bound which already does this.
+    store_utils::parse_stream_bound(id, target_ms, target_seq, true);
+
+    const auto it = data_.find(std::string(key));
+    if (it == data_.end()) continue;
+
+    const auto* stream_ptr = std::get_if<Stream>(&it->second.value);
+    if (stream_ptr == nullptr) continue;
+
+    std::vector<StreamEntry> entries;
+    for (const auto& entry : stream_ptr->entries) {
+      long long entry_ms = 0;
+      uint64_t entry_seq = 0;
+      store_utils::parse_stream_bound(entry.id, entry_ms, entry_seq, true);
+
+      // XREAD is strictly greater (exclusive)
+      if (entry_ms > target_ms || (entry_ms == target_ms && entry_seq > target_seq)) {
+        entries.push_back(entry);
+      }
+    }
+
+    if (!entries.empty()) {
+      result.emplace_back(std::string(key), std::move(entries));
+    }
+  }
+
+  return result;
+}

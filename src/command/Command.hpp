@@ -15,7 +15,23 @@
  * It includes a static method to parse its own type from the command name.
  */
 struct Command {
-  enum class Type : std::uint8_t { Ping, Echo, Set, Get, RPush, LPush, LRange, LLen, LPop, BLPop, TypeCmd, XAdd, XRange, Unknown };
+  enum class Type : std::uint8_t {
+    Ping,
+    Echo,
+    Set,
+    Get,
+    TypeCmd,
+    RPush,
+    LPush,
+    LRange,
+    LLen,
+    LPop,
+    BLPop,
+    XAdd,
+    XRange,
+    XRead,
+    Unknown
+  };
 
   Type type{ Type::Unknown };
   std::string name; ///< Original command name (e.g., "PING", "ECHO", etc.), used for error messages
@@ -33,15 +49,16 @@ struct Command {
     if (compareStrings(name, "echo")) { return Type::Echo; }
     if (compareStrings(name, "set")) {  return Type::Set; }
     if (compareStrings(name, "get")) {  return Type::Get; }
+    if (compareStrings(name, "type")) {  return Type::TypeCmd; }
     if (compareStrings(name, "rpush")) { return Type::RPush; }
     if (compareStrings(name, "lpush")) { return Type::LPush; }
     if (compareStrings(name, "lrange")) { return Type::LRange; }
     if (compareStrings(name, "llen")) { return Type::LLen; }
     if (compareStrings(name, "lpop")) { return Type::LPop; }
     if (compareStrings(name, "blpop")) { return Type::BLPop; }
-    if (compareStrings(name, "type")) { return Type::TypeCmd; }
     if (compareStrings(name, "xadd")) { return Type::XAdd; }
     if (compareStrings(name, "xrange")) { return Type::XRange; }
+    if (compareStrings(name, "xread")) { return Type::XRead; }
     return Type::Unknown;
   }
 };

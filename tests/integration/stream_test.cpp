@@ -90,3 +90,13 @@ TEST_F(StreamTest, XRangeQueriesElementsWithinRange) {
     EXPECT_EQ(resp, "*2\r\n*2\r\n$15\r\n1526985054069-0\r\n*4\r\n$11\r\ntemperature\r\n$2\r\n36\r\n$8\r\nhumidity\r\n$2\r\n95\r\n*2\r\n$15\r\n1526985054079-0\r\n*4\r\n$11\r\ntemperature\r\n$2\r\n37\r\n$8\r\nhumidity\r\n$2\r\n94\r\n");
   }
 }
+
+TEST_F(StreamTest, XReadQueriesElementsAfterId) {
+  client.xadd("k1", "1526985054069-0", std::vector<std::string_view>{"temp", "36"});
+  client.xadd("k1", "1526985054079-0", std::vector<std::string_view>{"temp", "37"});
+
+  constexpr std::array<std::string_view, 4> xread_args = {"XREAD", "STREAMS", "k1", "1526985054069-0"};
+  const std::string resp = client.send_raw(client.encode_array(xread_args));
+
+  EXPECT_EQ(resp, "*1\r\n*2\r\n$2\r\nk1\r\n*1\r\n*2\r\n$15\r\n1526985054079-0\r\n*2\r\n$4\r\ntemp\r\n$2\r\n37\r\n");
+}
