@@ -131,3 +131,21 @@ auto Store::type(const std::string_view key) -> StoreType {
 
   return it->second.type();
 }
+
+auto Store::xadd(const std::string_view key, const std::string_view id, const std::vector<std::pair<std::string, std::string>>& fields) -> std::string {
+  const std::string k(key);
+  auto& store_val = data_[k];
+  if (!std::holds_alternative<Stream>(store_val.value)) {
+    store_val.value = Stream{};
+  }
+
+  auto& stream = std::get<Stream>(store_val.value);
+  StreamEntry entry;
+  entry.id = std::string(id);
+  for (const auto& [field, value] : fields) {
+    entry.fields[field] = value;
+  }
+  stream.entries.push_back(std::move(entry));
+
+  return std::string(id);
+}

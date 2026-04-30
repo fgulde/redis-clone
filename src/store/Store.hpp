@@ -83,6 +83,15 @@ public:
    */
   auto type(std::string_view key) -> StoreType;
 
+  /**
+   * @brief Appends an entry to a stream.
+   * @param key The key of the stream.
+   * @param id The ID of the entry.
+   * @param fields Key-value pairs of the entry.
+   * @return The ID of the added entry.
+   */
+  auto xadd(std::string_view key, std::string_view id, const std::vector<std::pair<std::string, std::string>>& fields) -> std::string;
+
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
   using TimePoint = Clock::time_point; ///< Represents the expiration time of an entry

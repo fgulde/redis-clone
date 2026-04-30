@@ -32,6 +32,8 @@ add_library(redis_lib STATIC
         src/command/commands/BasicCommands.hpp
         src/command/commands/ListCommands.cpp
         src/command/commands/ListCommands.hpp
+        src/command/commands/StreamCommands.cpp
+        src/command/commands/StreamCommands.hpp
         src/net/Connection.cpp
         src/net/Connection.hpp
         src/net/Server.cpp
@@ -97,6 +99,7 @@ add_executable(redis_tests
         tests/integration/list_test.cpp
         tests/integration/blpop_test.cpp
         tests/integration/type_test.cpp
+        tests/integration/stream_test.cpp
         tests/helpers/test_server.hpp
         tests/helpers/test_client.hpp
 )

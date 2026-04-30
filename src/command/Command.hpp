@@ -15,7 +15,7 @@
  * It includes a static method to parse its own type from the command name.
  */
 struct Command {
-  enum class Type : std::uint8_t { Ping, Echo, Set, Get, RPush, LPush, LRange, LLen, LPop, BLPop, TypeCmd, Unknown };
+  enum class Type : std::uint8_t { Ping, Echo, Set, Get, RPush, LPush, LRange, LLen, LPop, BLPop, TypeCmd, XAdd, Unknown };
 
   Type type{ Type::Unknown };
   std::string name; ///< Original command name (e.g., "PING", "ECHO", etc.), used for error messages
@@ -40,6 +40,7 @@ struct Command {
     if (compareStrings(name, "lpop")) { return Type::LPop; }
     if (compareStrings(name, "blpop")) { return Type::BLPop; }
     if (compareStrings(name, "type")) { return Type::TypeCmd; }
+    if (compareStrings(name, "xadd")) { return Type::XAdd; }
     return Type::Unknown;
   }
 };
