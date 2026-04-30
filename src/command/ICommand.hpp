@@ -17,7 +17,13 @@
  */
 class ICommand {
 public:
+  ICommand() = default;
   virtual ~ICommand() = default;
+
+  ICommand(const ICommand&) = delete;
+  auto operator=(const ICommand&) -> ICommand& = delete;
+  ICommand(ICommand&&) = delete;
+  auto operator=(ICommand&&) -> ICommand& = delete;
 
   /**
    * @brief Executes the command.

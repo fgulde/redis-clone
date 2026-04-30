@@ -11,7 +11,7 @@ void PingCommand::execute(const Command& cmd, const asio::any_io_executor&,
                           const std::function<void(std::string)>& on_reply) const {
   // Optional Ping message argument
   if (!cmd.args.empty()) {
-    const std::string& msg = cmd.args[0];
+    const std::string& msg = cmd.args.at(0);
     on_reply(std::format("${}\r\n{}\r\n", msg.size(), msg));
   } else {
     on_reply("+PONG\r\n");
@@ -24,7 +24,7 @@ void EchoCommand::execute(const Command& cmd, const asio::any_io_executor&,
     on_reply(*err);
     return;
   }
-  const std::string& msg = cmd.args[0];
+  const std::string& msg = cmd.args.at(0);
   on_reply(std::format("${}\r\n{}\r\n", msg.size(), msg));
 }
 
@@ -42,9 +42,9 @@ void SetCommand::execute(const Command& cmd, const asio::any_io_executor&,
   }
 
   if (ttl) {
-    store_.set(cmd.args[0], cmd.args[1], *ttl);
+    store_.set(cmd.args.at(0), cmd.args.at(1), *ttl);
   } else {
-    store_.set(cmd.args[0], cmd.args[1]);
+    store_.set(cmd.args.at(0), cmd.args.at(1));
   }
 
   on_reply("+OK\r\n");
@@ -56,7 +56,7 @@ void GetCommand::execute(const Command& cmd, const asio::any_io_executor&,
     on_reply(*err);
     return;
   }
-  if (const auto value = store_.get(cmd.args[0]); !value) {
+  if (const auto value = store_.get(cmd.args.at(0)); !value) {
     on_reply("$-1\r\n"); // RESP Null bulk string
   } else {
     on_reply(std::format("${}\r\n{}\r\n", value->size(), *value));
@@ -70,7 +70,7 @@ void TypeCommand::execute(const Command& cmd, const asio::any_io_executor&,
     return;
   }
 
-  const std::string& key = cmd.args[0];
+  const std::string& key = cmd.args.at(0);
   const auto type = store_.type(key);
 
   on_reply(std::format("+{}\r\n", type.to_string()));

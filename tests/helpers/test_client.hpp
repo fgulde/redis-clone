@@ -26,18 +26,20 @@ public:
         socket_.connect(tcp::endpoint(asio::ip::address_v4::loopback(), port));
     }
 
+    ~TestClient() = default;
+
     TestClient(const TestClient&) = delete;
-    TestClient& operator=(const TestClient&) = delete;
+    auto operator=(const TestClient&) -> TestClient& = delete;
 
     TestClient(TestClient&&) = delete;
-    TestClient& operator=(TestClient&&) = delete;
+    auto operator=(TestClient&&) -> TestClient& = delete;
 
     /**
      * @brief Sends a raw RESP2 string and returns the complete response string.
      * @param raw_resp The raw RESP string to send.
      * @return The response string read from the server.
      */
-    std::string send_raw(const std::string_view raw_resp) {
+    auto send_raw(const std::string_view raw_resp) -> std::string { // NOLINT(*-function-cognitive-complexity)
         asio::write(socket_, asio::buffer(raw_resp));
 
         std::string response;
@@ -52,7 +54,7 @@ public:
             while (true) {
                 asio::read(socket_, asio::buffer(&c, 1));
                 response += c;
-                if (prev == '\r' && c == '\n') break;
+                if (prev == '\r' && c == '\n') { break; }
                 prev = c;
             }
         } else if (first_byte == '$') {
@@ -62,7 +64,7 @@ public:
             while (true) {
                 asio::read(socket_, asio::buffer(&c, 1));
                 response += c;
-                if (prev == '\r' && c == '\n') break;
+                if (prev == '\r' && c == '\n') { break; }
                 if (c != '\r' && c != '\n') {
                     len_str += c;
                 }
@@ -80,7 +82,7 @@ public:
             while (true) {
                 asio::read(socket_, asio::buffer(&c, 1));
                 response += c;
-                if (prev == '\r' && c == '\n') break;
+                if (prev == '\r' && c == '\n') { break; }
                 if (c != '\r' && c != '\n') {
                     len_str += c;
                 }
@@ -98,7 +100,7 @@ public:
                     while (true) {
                         asio::read(socket_, asio::buffer(&c2, 1));
                         response += c2;
-                        if (prev2 == '\r' && c2 == '\n') break;
+                        if (prev2 == '\r' && c2 == '\n') { break; }
                         if (c2 != '\r' && c2 != '\n') {
                             len2_str += c2;
                         }
@@ -119,7 +121,7 @@ public:
      * @brief Sends a PING command.
      * @return The raw RESP2 response.
      */
-    std::string ping() {
+    auto ping() -> std::string {
         return send_raw("*1\r\n$4\r\nping\r\n");
     }
 
@@ -128,7 +130,7 @@ public:
      * @param message The message to ping with.
      * @return The raw RESP2 response.
      */
-    std::string ping(std::string_view message) {
+    auto ping(std::string_view message) -> std::string {
         return send_raw(encode_array({"ping", message}));
     }
 
@@ -137,7 +139,7 @@ public:
      * @param message The message to echo.
      * @return The raw RESP2 response.
      */
-    std::string echo(std::string_view message) {
+    auto echo(std::string_view message) -> std::string {
         return send_raw(encode_array({"echo", message}));
     }
 
@@ -147,7 +149,7 @@ public:
      * @param value The value to set.
      * @return The raw RESP2 response.
      */
-    std::string set(std::string_view key, std::string_view value) {
+    auto set(std::string_view key, std::string_view value) -> std::string {
         return send_raw(encode_array({"set", key, value}));
     }
 
@@ -159,7 +161,7 @@ public:
      * @param ms_or_sec The time in ms or seconds.
      * @return The raw RESP2 response.
      */
-    std::string set(std::string_view key, std::string_view value, std::string_view option, const int64_t ms_or_sec) {
+    auto set(std::string_view key, std::string_view value, std::string_view option, const int64_t ms_or_sec) -> std::string {
         return send_raw(encode_array({"set", key, value, option, std::to_string(ms_or_sec)}));
     }
 
@@ -168,7 +170,7 @@ public:
      * @param key The key to get.
      * @return The raw RESP2 response.
      */
-    std::string get(std::string_view key) {
+    auto get(std::string_view key) -> std::string {
         return send_raw(encode_array({"get", key}));
     }
 
@@ -178,7 +180,7 @@ public:
      * @param elements The elements to push.
      * @return The raw RESP2 response.
      */
-    std::string rpush(const std::string_view key, std::span<const std::string_view> elements) {
+    auto rpush(const std::string_view key, std::span<const std::string_view> elements) -> std::string {
         std::vector<std::string_view> args{"rpush", key};
         args.insert(args.end(), elements.begin(), elements.end());
         return send_raw(encode_array(args));
@@ -190,7 +192,7 @@ public:
      * @param elements The elements to push.
      * @return The raw RESP2 response.
      */
-    std::string lpush(const std::string_view key, std::span<const std::string_view> elements) {
+    auto lpush(const std::string_view key, std::span<const std::string_view> elements) -> std::string {
         std::vector<std::string_view> args{"lpush", key};
         args.insert(args.end(), elements.begin(), elements.end());
         return send_raw(encode_array(args));
@@ -203,7 +205,7 @@ public:
      * @param stop The stop index.
      * @return The raw RESP2 response.
      */
-    std::string lrange(std::string_view key, const int64_t start, const int64_t stop) {
+    auto lrange(std::string_view key, const int64_t start, const int64_t stop) -> std::string {
         return send_raw(encode_array({"lrange", key, std::to_string(start), std::to_string(stop)}));
     }
 
@@ -212,7 +214,7 @@ public:
      * @param key The key of the list.
      * @return The raw RESP2 response.
      */
-    std::string llen(std::string_view key) {
+    auto llen(std::string_view key) -> std::string {
         return send_raw(encode_array({"llen", key}));
     }
 
@@ -221,7 +223,7 @@ public:
      * @param key The key of the list.
      * @return The raw RESP2 response.
      */
-    std::string lpop(std::string_view key) {
+    auto lpop(std::string_view key) -> std::string {
         return send_raw(encode_array({"lpop", key}));
     }
 
@@ -231,7 +233,7 @@ public:
      * @param count The number of elements to pop.
      * @return The raw RESP2 response.
      */
-    std::string lpop(std::string_view key, const int64_t count) {
+    auto lpop(std::string_view key, const int64_t count) -> std::string {
         return send_raw(encode_array({"lpop", key, std::to_string(count)}));
     }
 
@@ -240,14 +242,14 @@ public:
      * @param args The keys followed by the timeout.
      * @return The raw RESP2 response.
      */
-    std::string blpop(const std::vector<std::string_view>& args) {
+    auto blpop(const std::vector<std::string_view>& args) -> std::string {
         std::vector<std::string_view> req{"blpop"};
         req.insert(req.end(), args.begin(), args.end());
         return send_raw(encode_array(req));
     }
 
 private:
-    static std::string encode_array(const std::span<const std::string_view> args) {
+    static auto encode_array(const std::span<const std::string_view> args) -> std::string {
         std::string res;
         res += "*" + std::to_string(args.size()) + "\r\n";
         for (auto arg : args) {
@@ -258,20 +260,20 @@ private:
         return res;
     }
 
-    static std::string encode_array(const std::initializer_list<std::string_view> args) {
+    static auto encode_array(const std::initializer_list<std::string_view> args) -> std::string {
         return encode_array(std::span(args.begin(), args.end()));
     }
 
     // Helper that handles strings correctly via string_view implicit conversion,
     // but tests might pass temporaries, so std::to_string helps with some.
     // For mixing strings and string_views, we create small vectors in callers.
-    static std::string encode_array(const std::vector<std::string_view>& args) {
+    static auto encode_array(const std::vector<std::string_view>& args) -> std::string {
         return encode_array(std::span(args));
     }
 
-    static std::string encode_array(const std::vector<std::string>& args) {
+    static auto encode_array(const std::vector<std::string>& args) -> std::string {
         std::vector<std::string_view> views;
-        for (const auto& a : args) views.push_back(a);
+        for (const auto& a : args) { views.push_back(a); }
         return encode_array(std::span<const std::string_view>(views));
     }
 

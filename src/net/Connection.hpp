@@ -19,7 +19,7 @@ using asio::ip::tcp;
  */
 class Connection : public std::enable_shared_from_this<Connection> {
 public:
-  explicit Connection(tcp::socket socket, Store& store, BlockingManager& blocking_manager);
+  explicit Connection(tcp::socket socket, Store& store, BlockingManager& blocking_manager, asio::io_context& store_ctx);
   void start(); ///< Public wrapper method for calling do_read()
 
 private:
@@ -28,6 +28,7 @@ private:
   tcp::socket socket_; ///< Socket for each client connection, used for reading requests and writing responses
   Store& store_; ///< Reference to the shared Store, used to initialize CommandHandler
   BlockingManager& blocking_manager_; ///< Reference to the shared blocking manager
+  asio::io_context& store_ctx_; ///< Reference to the store io_context
   CommandHandler handler_; ///< Handles command parsing and execution for each connection
   asio::streambuf buf_; ///< Internal read buffer, where asio writes incoming bytes
   RespParser parser_; ///< Parses raw request strings into structured RespValue objects for CommandHandler

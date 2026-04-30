@@ -75,6 +75,11 @@ target_link_libraries(redis_lib PUBLIC
 # The actual server binary that runs in production.
 # ==============================================================================
 add_executable(redis src/main.cpp)
+set_target_properties(redis PROPERTIES
+        CXX_STANDARD 23
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+)
 target_link_libraries(redis PRIVATE redis_lib)
 
 # ==============================================================================

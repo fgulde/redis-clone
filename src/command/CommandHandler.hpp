@@ -38,7 +38,7 @@ private:
    * @param request Current command request as a RespValue (expected to be an array with the command name followed by arguments).
    * @return Parsed Command struct containing the command type, name, and arguments.
    */
-  static Command parse_command(const RespValue& request);
+  static auto parse_command(const RespValue& request) -> Command;
 
   CommandRegistry registry_;
 };

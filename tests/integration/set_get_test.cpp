@@ -11,11 +11,13 @@
 
 using namespace std::chrono_literals;
 
-class SetGetTest : public ::testing::Test {
-protected:
-    TestServer server;
-    TestClient client{server.port()};
-};
+namespace {
+    class SetGetTest : public ::testing::Test {
+    protected:
+        TestServer server;
+        TestClient client{server.port()};
+    };
+}
 
 TEST_F(SetGetTest, SetThenGetReturnsValue) {
     EXPECT_EQ(client.set("name", "redis"), "+OK\r\n");

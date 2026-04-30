@@ -17,11 +17,11 @@ using namespace std::literals;
  * Represents the type of value stored in Redis.
  */
 struct StoreType {
-  enum class Type { String, List, Set, ZSet, Hash, Stream, VectorSet, None };
+  enum class Type : std::uint8_t { String, List, Set, ZSet, Hash, Stream, VectorSet, None };
 
   Type type{ Type::None };
 
-  [[nodiscard]] std::string_view to_string() const {
+  [[nodiscard]] auto to_string() const -> std::string_view {
     switch (type) {
       case Type::String: return "string"sv;
       case Type::List: return "list"sv;
@@ -48,10 +48,10 @@ struct StoreValue {
   std::variant<std::string, std::deque<std::string>, Stream> value;
   std::optional<TimePoint> expires_at;
 
-  [[nodiscard]] StoreType type() const {
-    if (std::holds_alternative<std::string>(value)) return {StoreType::Type::String};
-    if (std::holds_alternative<std::deque<std::string>>(value)) return {StoreType::Type::List};
-    if (std::holds_alternative<Stream>(value)) return {StoreType::Type::Stream};
+  [[nodiscard]] auto type() const -> StoreType {
+    if (std::holds_alternative<std::string>(value)) { return {StoreType::Type::String}; }
+    if (std::holds_alternative<std::deque<std::string>>(value)) { return {StoreType::Type::List}; }
+    if (std::holds_alternative<Stream>(value)) { return {StoreType::Type::Stream}; }
     return {StoreType::Type::None};
   }
 };
