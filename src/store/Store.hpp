@@ -102,6 +102,14 @@ public:
    */
   auto xrange(std::string_view key, std::string_view start_id, std::string_view end_id) const -> std::vector<StreamEntry>;
 
+  /**
+   * @brief Reads from multiple streams, returning entries with IDs strictly greater than the requested ID.
+   * @param keys The stream keys.
+   * @param ids The starting IDs.
+   * @return The read streams and their entries.
+   */
+  auto xread(const std::vector<std::string_view>& keys, const std::vector<std::string_view>& ids) const -> std::vector<std::pair<std::string, std::vector<StreamEntry>>>;
+
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
   using TimePoint = Clock::time_point; ///< Represents the expiration time of an entry
