@@ -102,7 +102,7 @@ TEST_F(StreamTest, XReadQueriesElementsAfterId) {
 TEST_F(StreamTest, XReadBlockWithTimeout) {
   const std::string resp = client.xread({"BLOCK", "100", "STREAMS", "k2", "0-0"});
 
-  EXPECT_EQ(resp, "$-1\r\n");
+  EXPECT_EQ(resp, "*-1\r\n");
 }
 
 TEST_F(StreamTest, XReadBlockWakeUp) {
@@ -118,6 +118,7 @@ TEST_F(StreamTest, XReadBlockWakeUp) {
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   client.xadd("k3", "0-1", std::vector<std::string_view>{"temp", "38"});
 
+  t.join();
   EXPECT_TRUE(thread_done);
 }
 
@@ -135,5 +136,6 @@ TEST_F(StreamTest, XReadBlockDollar) {
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
   client.xadd("k4", "0-2", std::vector<std::string_view>{"temp", "2"});
 
+  t.join();
   EXPECT_TRUE(thread_done);
 }
