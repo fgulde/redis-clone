@@ -248,7 +248,6 @@ public:
         return send_raw(encode_array(req));
     }
 
-private:
     static auto encode_array(const std::span<const std::string_view> args) -> std::string {
         std::string res;
         res += "*" + std::to_string(args.size()) + "\r\n";
@@ -277,6 +276,7 @@ private:
         return encode_array(std::span<const std::string_view>(views));
     }
 
+private:
     // Own io_context since socket needs it, but we run synchronously so io_context.run() is never called.
     asio::io_context io_context_;
 

@@ -5,6 +5,7 @@
 #include "CommandRegistry.hpp"
 #include "commands/BasicCommands.hpp"
 #include "commands/ListCommands.hpp"
+#include "commands/StreamCommands.hpp"
 
 void CommandRegistry::register_command(const Command::Type type, std::unique_ptr<ICommand> command) {
   commands_[type] = std::move(command);
@@ -34,6 +35,9 @@ auto build_registry(Store& store, BlockingManager& blocking_manager) -> CommandR
   registry.register_command(Command::Type::LLen, std::make_unique<LLenCommand>(store));
   registry.register_command(Command::Type::LPop, std::make_unique<LPopCommand>(store));
   registry.register_command(Command::Type::BLPop, std::make_unique<BlpopCommand>(store, blocking_manager));
+
+  // Stream Commands
+  registry.register_command(Command::Type::XAdd, std::make_unique<XAddCommand>(store));
 
   return registry;
 }
