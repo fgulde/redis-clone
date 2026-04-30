@@ -1,0 +1,108 @@
+//
+// Created by fguld on 4/30/2026.
+//
+
+#pragma once
+
+#include <string>
+#include <string_view>
+#include <stdexcept>
+#include <chrono>
+
+namespace store_utils {
+
+// Struct to hold the parsed parts of a stream ID
+struct StreamIdParts {
+  long long ms = 0;
+  long long seq = 0;
+  bool auto_seq = false;
+};
+
+// Struct to hold the parsed parts of the last ID (used for auto-sequence resolution)
+struct LastId {
+  long long ms = 0;
+  long long seq = 0;
+  bool valid = false;
+};
+
+inline auto parse_stream_id(std::string_view id) -> StreamIdParts {
+  // Case 1: Auto ID generation
+  if (id == "*") {
+    const auto now = std::chrono::system_clock::now().time_since_epoch();
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now).count();
+    return {ms, 0, true};
+  }
+  // Case 2: Regular ID with optional auto-sequence
+  const auto dash = id.find('-');
+  if (dash == std::string_view::npos) throw std::invalid_argument("Invalid stream ID specified");
+
+  StreamIdParts p;
+  try { p.ms = std::stoull(std::string(id.substr(0, dash))); }
+  catch (...) { throw std::invalid_argument("Invalid stream ID specified"); }
+
+  // Case 2a: Auto-sequence
+  if (const auto seq_s = id.substr(dash + 1); seq_s == "*") { p.auto_seq = true; }
+  else // Case 2b: Regular sequence
+  {
+    try { p.seq = std::stoull(std::string(seq_s)); }
+    catch (...) { throw std::invalid_argument("Invalid stream ID specified"); }
+  }
+  return p;
+}
+
+inline auto parse_last_id(std::string_view last_id) -> LastId {
+  LastId l;
+  if (last_id.empty()) return l;
+  if (const auto dash = last_id.find('-'); dash != std::string_view::npos) {
+    l.ms = std::stoull(std::string(last_id.substr(0, dash)));
+    l.seq = std::stoull(std::string(last_id.substr(dash + 1)));
+    l.valid = true;
+  }
+  return l;
+}
+
+inline auto resolve_seq(const StreamIdParts &p, const LastId &l) -> long long {
+  if (!p.auto_seq) return p.seq;
+  if (l.valid && p.ms == l.ms) return l.seq + 1;
+  if (p.ms == 0) return 1;
+  return 0;
+}
+
+inline void validate_id(const long long ms, const long long seq, const LastId &l) {
+  if (ms == 0 && seq == 0) {
+    throw std::invalid_argument("The ID specified in XADD must be greater than 0-0");
+  }
+  if (l.valid && (ms < l.ms || (ms == l.ms && seq <= l.seq))) {
+    throw std::invalid_argument("The ID specified in XADD is equal or smaller than the target stream top item");
+  }
+}
+
+// Generates the final stream ID string after parsing and validation for XADD
+inline auto generate_stream_id(const std::string_view id, const std::string_view last_id) -> std::string {
+  auto p = parse_stream_id(id);
+  const auto l = parse_last_id(last_id);
+  p.seq = resolve_seq(p, l);
+  validate_id(p.ms, p.seq, l);
+  return std::to_string(p.ms) + "-" + std::to_string(p.seq);
+}
+
+// Struct to hold resolved list bounds
+struct ListRange {
+  long long start = 0;
+  long long stop = 0;
+  bool valid = false;
+};
+
+// Resolves and bounds negative list indices for LRANGE
+inline auto resolve_list_indices(long long start, long long stop, const long long size) -> ListRange {
+  if (start < 0) { start = std::max(0LL, start + size); }
+  if (stop < 0) { stop = stop + size; }
+
+  if (start >= size || start > stop) { return {0, 0, false}; }
+
+  const long long clamped_stop = std::min(stop, size - 1);
+  return {start, clamped_stop, true};
+}
+
+} // namespace store_utils
+

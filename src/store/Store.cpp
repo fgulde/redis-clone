@@ -5,6 +5,8 @@
 #include "Store.hpp"
 
 #include <ranges>
+#include <chrono>
+#include "../util/StoreUtils.hpp"
 
 void Store::set(const std::string_view key, std::string value) {
   data_[std::string(key)] = StoreValue{ .value=std::move(value), .expires_at=std::nullopt };
@@ -67,7 +69,7 @@ auto Store::lpush(const std::string_view key, const std::vector<std::string> &va
   return len;
 }
 
-auto Store::lrange(const std::string_view key, long long start, long long stop) const -> std::vector<std::string> {
+auto Store::lrange(const std::string_view key, const long long start, const long long stop) const -> std::vector<std::string> {
   const auto it = data_.find(std::string(key));
   if (it == data_.end()) { return {}; }
 
@@ -77,15 +79,10 @@ auto Store::lrange(const std::string_view key, long long start, long long stop) 
   const auto& list = *list_ptr;
   const auto size = static_cast<long long>(list.size());
 
-  // Resolve negative indices: -1 = last element, -2 = second to last, etc.
-  if (start < 0) { start = std::max(0LL, start + size);  }
-  if (stop  < 0) { stop  = stop + size; }
+  const auto range = store_utils::resolve_list_indices(start, stop, size);
+  if (!range.valid) { return {}; }
 
-  if (start >= size || start > stop) { return {}; }
-
-  const long long clamped_stop = std::min(stop, size - 1);
-
-  return { list.begin() + start, list.begin() + clamped_stop + 1 };
+  return { list.begin() + range.start, list.begin() + range.stop + 1 };
 }
 
 auto Store::llen(const std::string_view key) const -> std::size_t {
@@ -140,12 +137,19 @@ auto Store::xadd(const std::string_view key, const std::string_view id, const st
   }
 
   auto& stream = std::get<Stream>(store_val.value);
+  std::string last_id;
+  if (!stream.entries.empty()) {
+    last_id = stream.entries.back().id;
+  }
+
+  std::string new_id = store_utils::generate_stream_id(id, last_id);
+
   StreamEntry entry;
-  entry.id = std::string(id);
+  entry.id = new_id;
   for (const auto& [field, value] : fields) {
     entry.fields[field] = value;
   }
   stream.entries.push_back(std::move(entry));
 
-  return std::string(id);
+  return new_id;
 }
