@@ -34,23 +34,14 @@ public:
     TestClient(TestClient&&) = delete;
     auto operator=(TestClient&&) -> TestClient& = delete;
 
-    /**
-     * @brief Sends a raw RESP2 string and returns the complete response string.
-     * @param raw_resp The raw RESP string to send.
-     * @return The response string read from the server.
-     */
-    auto send_raw(const std::string_view raw_resp) -> std::string { // NOLINT(*-function-cognitive-complexity)
-        asio::write(socket_, asio::buffer(raw_resp));
-
-        std::string response;
+    auto read_resp(std::string& response) -> void {
         char first_byte;
         asio::read(socket_, asio::buffer(&first_byte, 1));
         response += first_byte;
 
         if (first_byte == '+' || first_byte == '-' || first_byte == ':') {
             // Read until CRLF
-            char c;
-            char prev = '\0';
+            char c, prev = '\0';
             while (true) {
                 asio::read(socket_, asio::buffer(&c, 1));
                 response += c;
@@ -64,10 +55,8 @@ public:
             while (true) {
                 asio::read(socket_, asio::buffer(&c, 1));
                 response += c;
-                if (prev == '\r' && c == '\n') { break; }
-                if (c != '\r' && c != '\n') {
-                    len_str += c;
-                }
+                if (prev == '\r' && c == '\n') break;
+                if (c != '\r' && c != '\n') len_str += c;
                 prev = c;
             }
             if (const int len = std::stoi(len_str); len != -1) {
@@ -82,38 +71,28 @@ public:
             while (true) {
                 asio::read(socket_, asio::buffer(&c, 1));
                 response += c;
-                if (prev == '\r' && c == '\n') { break; }
-                if (c != '\r' && c != '\n') {
-                    len_str += c;
-                }
+                if (prev == '\r' && c == '\n') break;
+                if (c != '\r' && c != '\n') len_str += c;
                 prev = c;
             }
             if (const int len = std::stoi(len_str); len != -1) {
                 for (int i = 0; i < len; ++i) {
-                    char type_byte;
-                    asio::read(socket_, asio::buffer(&type_byte, 1));
-                    // Hacky read substring manually or recurse
-                    // Quick way for simple RESP array reading, we just expect bulk strings inside
-                    std::string len2_str;
-                    char c2, prev2 = '\0';
-                    response += type_byte;
-                    while (true) {
-                        asio::read(socket_, asio::buffer(&c2, 1));
-                        response += c2;
-                        if (prev2 == '\r' && c2 == '\n') { break; }
-                        if (c2 != '\r' && c2 != '\n') {
-                            len2_str += c2;
-                        }
-                        prev2 = c2;
-                    }
-                    if (const int len2 = std::stoi(len2_str); len2 != -1) {
-                        std::string data(len2 + 2, '\0'); // +2 for trailing CRLF
-                        asio::read(socket_, asio::buffer(data));
-                        response += data;
-                    }
+                    read_resp(response);
                 }
             }
         }
+    }
+
+    /**
+     * @brief Sends a raw RESP2 string and returns the complete response string.
+     * @param raw_resp The raw RESP string to send.
+     * @return The response string read from the server.
+     */
+    auto send_raw(const std::string_view raw_resp) -> std::string { // NOLINT(*-function-cognitive-complexity)
+        asio::write(socket_, asio::buffer(raw_resp));
+
+        std::string response;
+        read_resp(response);
         return response;
     }
 
@@ -246,6 +225,30 @@ public:
         std::vector<std::string_view> req{"blpop"};
         req.insert(req.end(), args.begin(), args.end());
         return send_raw(encode_array(req));
+    }
+
+    /**
+     * @brief Sends an XADD command.
+     * @param key The stream key.
+     * @param id The stream entry ID.
+     * @param fields Key-value pairs for the stream entry.
+     * @return The raw RESP2 response.
+     */
+    auto xadd(std::string_view key, std::string_view id, std::span<const std::string_view> fields) -> std::string {
+        std::vector<std::string_view> args{"xadd", key, id};
+        args.insert(args.end(), fields.begin(), fields.end());
+        return send_raw(encode_array(args));
+    }
+
+    /**
+     * @brief Sends an XRANGE command.
+     * @param key The stream key.
+     * @param start The start ID.
+     * @param end The end ID.
+     * @return The raw RESP2 response.
+     */
+    auto xrange(std::string_view key, std::string_view start, std::string_view end) -> std::string {
+        return send_raw(encode_array({"xrange", key, start, end}));
     }
 
     static auto encode_array(const std::span<const std::string_view> args) -> std::string {

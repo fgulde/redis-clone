@@ -8,6 +8,7 @@
 #include <string_view>
 #include <stdexcept>
 #include <chrono>
+#include <limits>
 
 namespace store_utils {
 
@@ -84,6 +85,29 @@ inline auto generate_stream_id(const std::string_view id, const std::string_view
   p.seq = resolve_seq(p, l);
   validate_id(p.ms, p.seq, l);
   return std::to_string(p.ms) + "-" + std::to_string(p.seq);
+}
+
+// Parses bounds for XRANGE: handles missing dashes, '-' and '+'
+inline void parse_stream_bound(std::string_view id, long long& ms, uint64_t& seq, bool is_start) {
+  if (id == "-") {
+    ms = 0;
+    seq = 0;
+    return;
+  }
+  if (id == "+") {
+    ms = std::numeric_limits<long long>::max();
+    seq = std::numeric_limits<uint64_t>::max();
+    return;
+  }
+
+  // If there's no dash, treat the entire ID as milliseconds and set sequence based on whether it's a start or end bound
+  if (const auto dash = id.find('-'); dash == std::string_view::npos) {
+    ms = std::stoull(std::string(id));
+    seq = is_start ? 0 : std::numeric_limits<uint64_t>::max();
+  } else {
+    ms = std::stoull(std::string(id.substr(0, dash)));
+    seq = std::stoull(std::string(id.substr(dash + 1)));
+  }
 }
 
 // Struct to hold resolved list bounds
