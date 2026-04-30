@@ -146,10 +146,45 @@ auto Store::xadd(const std::string_view key, const std::string_view id, const st
 
   StreamEntry entry;
   entry.id = new_id;
-  for (const auto& [field, value] : fields) {
-    entry.fields[field] = value;
-  }
+  entry.fields = fields;
   stream.entries.push_back(std::move(entry));
 
   return new_id;
+}
+
+auto Store::xrange(const std::string_view key, const std::string_view start_id, const std::string_view end_id) const -> std::vector<StreamEntry> {
+  const auto it = data_.find(std::string(key));
+  if (it == data_.end()) {
+    return {};
+  }
+
+  const auto* stream_ptr = std::get_if<Stream>(&it->second.value);
+  if (stream_ptr == nullptr) {
+    return {};
+  }
+
+  long long start_ms = 0;
+  uint64_t start_seq = 0;
+  store_utils::parse_stream_bound(start_id, start_ms, start_seq, true);
+
+  long long end_ms = 0;
+  uint64_t end_seq = 0;
+  store_utils::parse_stream_bound(end_id, end_ms, end_seq, false);
+
+  std::vector<StreamEntry> result;
+  for (const auto& entry : stream_ptr->entries) {
+    long long entry_ms = 0;
+    uint64_t entry_seq = 0;
+    store_utils::parse_stream_bound(entry.id, entry_ms, entry_seq, true);
+
+    if (entry_ms > end_ms || (entry_ms == end_ms && entry_seq > end_seq)) {
+      break;
+    }
+
+    if (entry_ms > start_ms || (entry_ms == start_ms && entry_seq >= start_seq)) {
+      result.push_back(entry);
+    }
+  }
+
+  return result;
 }

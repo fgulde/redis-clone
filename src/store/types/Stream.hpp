@@ -6,11 +6,10 @@
 
 #include <string>
 #include <vector>
-#include <map>
 
 struct StreamEntry {
   std::string id;
-  std::map<std::string, std::string> fields;
+  std::vector<std::pair<std::string, std::string>> fields;
 };
 
 struct Stream {

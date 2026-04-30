@@ -29,3 +29,32 @@ void XAddCommand::execute(const Command& cmd, const asio::any_io_executor&,
     on_reply(std::format("-ERR {}\r\n", e.what()));
   }
 }
+
+void XRangeCommand::execute(const Command& cmd, const asio::any_io_executor&,
+                            const std::function<void(std::string)>& on_reply) const {
+  if (cmd.args.size() != 3) {
+    on_reply("-ERR wrong number of arguments for XRANGE\r\n");
+    return;
+  }
+
+  const std::string& key = cmd.args.at(0);
+  const std::string& start = cmd.args.at(1);
+  const std::string& end = cmd.args.at(2);
+
+  try {
+    const auto entries = store_.xrange(key, start, end);
+    std::string reply = std::format("*{}\r\n", entries.size());
+    for (const auto& entry : entries) {
+      reply += "*2\r\n";
+      reply += std::format("${}\r\n{}\r\n", entry.id.size(), entry.id);
+      reply += std::format("*{}\r\n", entry.fields.size() * 2);
+      for (const auto& [field, value] : entry.fields) {
+        reply += std::format("${}\r\n{}\r\n", field.size(), field);
+        reply += std::format("${}\r\n{}\r\n", value.size(), value);
+      }
+    }
+    on_reply(reply);
+  } catch (const std::exception& e) {
+    on_reply(std::format("-ERR {}\r\n", e.what()));
+  }
+}

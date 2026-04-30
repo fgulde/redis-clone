@@ -8,6 +8,7 @@
 #include <vector>
 #include <unordered_map>
 #include "StoreValue.hpp"
+#include "types/Stream.hpp"
 
 class Store {
 public:
@@ -91,6 +92,15 @@ public:
    * @return The ID of the added entry.
    */
   auto xadd(std::string_view key, std::string_view id, const std::vector<std::pair<std::string, std::string>>& fields) -> std::string;
+
+  /**
+   * @brief Returns a range of entries from a stream.
+   * @param key The key of the stream.
+   * @param start_id The start ID.
+   * @param end_id The end ID.
+   * @return The range of stream entries.
+   */
+  auto xrange(std::string_view key, std::string_view start_id, std::string_view end_id) const -> std::vector<StreamEntry>;
 
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
