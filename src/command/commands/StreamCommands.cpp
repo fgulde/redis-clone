@@ -84,7 +84,7 @@ void XReadCommand::execute(const Command& cmd, const asio::any_io_executor& exec
     }
 
     if (!parsed.is_blocking) {
-      on_reply("$-1\r\n");
+      on_reply("*-1\r\n");
       return;
     }
 

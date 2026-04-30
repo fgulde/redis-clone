@@ -122,7 +122,7 @@ inline auto parse_xread_args(const Command& cmd) -> XReadArgs {
  * @brief Formats XREAD or XRANGE response into a RESP array.
  */
 inline auto format_stream_entries(const std::vector<std::pair<std::string, std::vector<StreamEntry>>>& results) -> std::string {
-  if (results.empty()) return "$-1\r\n";
+  if (results.empty()) return "*-1\r\n";
   std::string reply = std::format("*{}\r\n", results.size());
   for (const auto& [key, entries] : results) {
     reply += "*2\r\n";
@@ -202,7 +202,7 @@ inline void setup_xread_blocking(Store& store, BlockingManager& blocking_manager
   timer->async_wait([id_ptr, on_reply, &blocking_manager](const asio::error_code& ec) -> void {
     if (!ec) {
       blocking_manager.unregister_xread(*id_ptr);
-      on_reply("$-1\r\n"); // XREAD null array on timeout
+      on_reply("*-1\r\n"); // XREAD null array on timeout
     }
   });
 }
