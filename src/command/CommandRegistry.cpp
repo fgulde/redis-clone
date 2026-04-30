@@ -37,9 +37,9 @@ auto build_registry(Store& store, BlockingManager& blocking_manager) -> CommandR
   registry.register_command(Command::Type::BLPop, std::make_unique<BlpopCommand>(store, blocking_manager));
 
   // Stream Commands
-  registry.register_command(Command::Type::XAdd, std::make_unique<XAddCommand>(store));
+  registry.register_command(Command::Type::XAdd, std::make_unique<XAddCommand>(store, blocking_manager));
   registry.register_command(Command::Type::XRange, std::make_unique<XRangeCommand>(store));
-  registry.register_command(Command::Type::XRead, std::make_unique<XReadCommand>(store));
+  registry.register_command(Command::Type::XRead, std::make_unique<XReadCommand>(store, blocking_manager));
 
   return registry;
 }

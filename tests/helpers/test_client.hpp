@@ -251,6 +251,26 @@ public:
         return send_raw(encode_array({"xrange", key, start, end}));
     }
 
+    /**
+     * @brief Sends an XREAD command.
+     * @param args The arguments after XREAD.
+     * @return The raw RESP2 response.
+     */
+    auto xread(const std::vector<std::string_view>& args) -> std::string {
+        std::vector<std::string_view> req{"xread"};
+        req.insert(req.end(), args.begin(), args.end());
+        return send_raw(encode_array(req));
+    }
+
+    /**
+     * @brief Sends a TYPE command.
+     * @param key The key to check.
+     * @return The raw RESP2 response.
+     */
+    auto type(std::string_view key) -> std::string {
+        return send_raw(encode_array({"type", key}));
+    }
+
     static auto encode_array(const std::span<const std::string_view> args) -> std::string {
         std::string res;
         res += "*" + std::to_string(args.size()) + "\r\n";
