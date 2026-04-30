@@ -35,3 +35,29 @@ void BlockingManager::serve_blpop_waiters(const std::string& key, Store& store) 
   }
 }
 
+auto BlockingManager::register_xread(const std::vector<std::string>& keys, const XReadCallback &cb) -> uint64_t {
+  const uint64_t id = next_xread_id_++;
+  for (const auto& key : keys) {
+    xread_callbacks_[key].push_back({.id=id, .callback=cb});
+  }
+  return id;
+}
+
+void BlockingManager::unregister_xread(const uint64_t id) {
+  for (auto &q: xread_callbacks_ | std::views::values) {
+    std::erase_if(q, [id](const auto& cb) -> auto { return cb.id == id; });
+  }
+}
+
+void BlockingManager::serve_xread_waiters(const std::string& key) {
+  const auto it = xread_callbacks_.find(key);
+  if (it == xread_callbacks_.end()) return;
+
+  // Make a copy of waiters to invoke callbacks and unregister
+  for (auto waiters = it->second; const auto& waiter : waiters) {
+    const auto cb = waiter.callback;
+    // XREAD is unblocked immediately upon any new matching entry
+    unregister_xread(waiter.id);
+    cb(key);
+  }
+}

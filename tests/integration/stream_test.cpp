@@ -64,8 +64,7 @@ TEST_F(StreamTest, XAddZeroTimeAutoSequence) {
 TEST_F(StreamTest, XAddSetsTypeToStream) {
     client.xadd("s1", "0-1", std::vector<std::string_view>{"f", "v"});
 
-    constexpr std::array<std::string_view, 2> type_args = {"TYPE", "s1"};
-    const std::string resp = client.send_raw(client.encode_array(type_args));
+    const std::string resp = client.type("s1");
     EXPECT_EQ(resp, "+stream\r\n");
 }
 
@@ -95,8 +94,46 @@ TEST_F(StreamTest, XReadQueriesElementsAfterId) {
   client.xadd("k1", "1526985054069-0", std::vector<std::string_view>{"temp", "36"});
   client.xadd("k1", "1526985054079-0", std::vector<std::string_view>{"temp", "37"});
 
-  constexpr std::array<std::string_view, 4> xread_args = {"XREAD", "STREAMS", "k1", "1526985054069-0"};
-  const std::string resp = client.send_raw(client.encode_array(xread_args));
+  const std::string resp = client.xread({"STREAMS", "k1", "1526985054069-0"});
 
   EXPECT_EQ(resp, "*1\r\n*2\r\n$2\r\nk1\r\n*1\r\n*2\r\n$15\r\n1526985054079-0\r\n*2\r\n$4\r\ntemp\r\n$2\r\n37\r\n");
+}
+
+TEST_F(StreamTest, XReadBlockWithTimeout) {
+  const std::string resp = client.xread({"BLOCK", "100", "STREAMS", "k2", "0-0"});
+
+  EXPECT_EQ(resp, "$-1\r\n");
+}
+
+TEST_F(StreamTest, XReadBlockWakeUp) {
+  std::atomic thread_done = false;
+
+  std::jthread t([&thread_done, this]() -> void {
+    TestClient blocking_client{server.port()};
+    const std::string resp = blocking_client.xread({"BLOCK", "1000", "STREAMS", "k3", "0-0"});
+    EXPECT_EQ(resp, "*1\r\n*2\r\n$2\r\nk3\r\n*1\r\n*2\r\n$3\r\n0-1\r\n*2\r\n$4\r\ntemp\r\n$2\r\n38\r\n");
+    thread_done = true;
+  });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  client.xadd("k3", "0-1", std::vector<std::string_view>{"temp", "38"});
+
+  EXPECT_TRUE(thread_done);
+}
+
+TEST_F(StreamTest, XReadBlockDollar) {
+  client.xadd("k4", "0-1", std::vector<std::string_view>{"temp", "1"});
+
+  std::atomic thread_done = false;
+  std::jthread t([&thread_done, this]() -> void {
+    TestClient blocking_client{server.port()};
+    const std::string resp = blocking_client.xread({"BLOCK", "1000", "STREAMS", "k4", "$"});
+    EXPECT_EQ(resp, "*1\r\n*2\r\n$2\r\nk4\r\n*1\r\n*2\r\n$3\r\n0-2\r\n*2\r\n$4\r\ntemp\r\n$1\r\n2\r\n");
+    thread_done = true;
+  });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  client.xadd("k4", "0-2", std::vector<std::string_view>{"temp", "2"});
+
+  EXPECT_TRUE(thread_done);
 }

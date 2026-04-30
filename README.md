@@ -23,9 +23,11 @@ Areas of exploration include:
 Already implemented:
 - RESP2 protocol parsing (`SimpleString`, `BulkString`, `Integer`, `Array`, `Null`)
 - Key-Value commands (`SET`, `GET`, `TYPE`)
+- Key expiration via `EX` (seconds) and `PX` (milliseconds) flags on `SET`
 - Basic utility commands (`PING`, `ECHO`)
 - List commands (`RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`, `BLPOP`)
-- Key expiration via `EX` (seconds) and `PX` (milliseconds) flags on `SET`
+- Stream commands (`XADD`, `XRANGE`, `XREAD` incl. `BLOCK` support)
+- Auto-generated IDs (`*`, `ms-*`) for `XADD`, infinite bounds (`-`, `+`) for `XRANGE`, and `$` ID for `XREAD`
 - Lazy deletion of expired keys on access
 - Multithreaded architecture (multi-reactor pattern): thread pool (`network_ctx`) handles async I/O, separated from a single-threaded lock-free store execution loop (`store_ctx`)
 - Support for customizable port via `--port` command line argument and `REDIS_PORT` environment variable
@@ -34,7 +36,6 @@ Already implemented:
 Planned:
 - RDB Persistence
 - AOF Persistence
-- Streams
 - Transactions
 - Replication
 - Pub/Sub
@@ -161,7 +162,9 @@ src/
 │       ├── BasicCommands.hpp # PING, SET, GET, ECHO, etc.
 │       ├── BasicCommands.cpp
 │       ├── ListCommands.hpp  # LPUSH, RPUSH, BLPOP, etc.
-│       └── ListCommands.cpp
+│       ├── ListCommands.cpp
+│       ├── StreamCommands.hpp # XADD, XRANGE, XREAD
+│       └── StreamCommands.cpp
 ├── net/
 │   ├── Server.hpp
 │   ├── Server.cpp            # Async TCP acceptor, manages connections
