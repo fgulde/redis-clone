@@ -7,41 +7,56 @@
 #include "../ICommand.hpp"
 #include "../../store/Store.hpp"
 
+/**
+ * @brief Command to reply with PONG.
+ */
 class PingCommand : public ICommand {
 public:
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 };
 
+/**
+ * @brief Command to echo the provided message.
+ */
 class EchoCommand : public ICommand {
 public:
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 };
 
+/**
+ * @brief Command to set the string value of a key.
+ */
 class SetCommand : public ICommand {
 public:
   explicit SetCommand(Store& store) : store_(store) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
-  Store& store_;
+  Store& store_; ///< Target data store
 };
 
+/**
+ * @brief Command to get the value of a key.
+ */
 class GetCommand : public ICommand {
 public:
   explicit GetCommand(Store& store) : store_(store) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
-  Store& store_;
+  Store& store_; ///< Target data store
 };
 
+/**
+ * @brief Command to determine the type stored at key.
+ */
 class TypeCommand : public ICommand {
 public:
   explicit TypeCommand(Store& store) : store_(store) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
-  Store& store_;
+  Store& store_; ///< Target data store
 };

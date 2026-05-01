@@ -11,6 +11,11 @@
 
 #include "Store.hpp"
 
+/**
+ * @brief Manages blocking operations like BLPOP and XREAD.
+ *
+ * It holds lists of callbacks for specific keys and triggers them when new elements are pushed or added.
+ */
 class BlockingManager {
 public:
   BlockingManager() = default;
