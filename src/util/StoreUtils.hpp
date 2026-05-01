@@ -10,22 +10,34 @@
 #include <chrono>
 #include <limits>
 
+/**
+ * @brief Utility functions for store operations.
+ */
 namespace store_utils {
 
-// Struct to hold the parsed parts of a stream ID
+/**
+ * @brief Struct to hold the parsed parts of a stream ID
+ */
 struct StreamIdParts {
   long long ms = 0;
   long long seq = 0;
   bool auto_seq = false;
 };
 
-// Struct to hold the parsed parts of the last ID (used for auto-sequence resolution)
+/**
+ * @brief Struct to hold the parsed parts of the last ID (used for auto-sequence resolution)
+ */
 struct LastId {
   long long ms = 0;
   long long seq = 0;
   bool valid = false;
 };
 
+/**
+ * @brief Parses a stream ID string into its parts.
+ * @param id The stream ID string.
+ * @return Parsed representation of stream ID.
+ */
 inline auto parse_stream_id(std::string_view id) -> StreamIdParts {
   // Case 1: Auto ID generation
   if (id == "*") {
@@ -51,6 +63,9 @@ inline auto parse_stream_id(std::string_view id) -> StreamIdParts {
   return p;
 }
 
+/**
+ * @brief Parses the last ID of a stream.
+ */
 inline auto parse_last_id(std::string_view last_id) -> LastId {
   LastId l;
   if (last_id.empty()) return l;
@@ -62,6 +77,9 @@ inline auto parse_last_id(std::string_view last_id) -> LastId {
   return l;
 }
 
+/**
+ * @brief Resolves the sequence number for a stream entry.
+ */
 inline auto resolve_seq(const StreamIdParts &p, const LastId &l) -> long long {
   if (!p.auto_seq) return p.seq;
   if (l.valid && p.ms == l.ms) return l.seq + 1;
@@ -69,6 +87,9 @@ inline auto resolve_seq(const StreamIdParts &p, const LastId &l) -> long long {
   return 0;
 }
 
+/**
+ * @brief Validates a generated sequence number.
+ */
 inline void validate_id(const long long ms, const long long seq, const LastId &l) {
   if (ms == 0 && seq == 0) {
     throw std::invalid_argument("The ID specified in XADD must be greater than 0-0");
@@ -78,7 +99,12 @@ inline void validate_id(const long long ms, const long long seq, const LastId &l
   }
 }
 
-// Generates the final stream ID string after parsing and validation for XADD
+/**
+ * @brief Generates the final stream ID string after parsing and validation for XADD
+ * @param id The stream ID pattern.
+ * @param last_id The last ID in the stream.
+ * @return The resolved stream ID string.
+ */
 inline auto generate_stream_id(const std::string_view id, const std::string_view last_id) -> std::string {
   auto p = parse_stream_id(id);
   const auto l = parse_last_id(last_id);
@@ -87,7 +113,9 @@ inline auto generate_stream_id(const std::string_view id, const std::string_view
   return std::to_string(p.ms) + "-" + std::to_string(p.seq);
 }
 
-// Parses bounds for XRANGE: handles missing dashes, '-' and '+'
+/**
+ * @brief Parses bounds for XRANGE: handles missing dashes, '-' and '+'
+ */
 inline void parse_stream_bound(std::string_view id, long long& ms, uint64_t& seq, bool is_start) {
   if (id == "-") {
     ms = 0;
@@ -110,14 +138,18 @@ inline void parse_stream_bound(std::string_view id, long long& ms, uint64_t& seq
   }
 }
 
-// Struct to hold resolved list bounds
+/**
+ * @brief Struct to hold resolved list bounds
+ */
 struct ListRange {
   long long start = 0;
   long long stop = 0;
   bool valid = false;
 };
 
-// Resolves and bounds negative list indices for LRANGE
+/**
+ * @brief Resolves and bounds negative list indices for LRANGE
+ */
 inline auto resolve_list_indices(long long start, long long stop, const long long size) -> ListRange {
   if (start < 0) { start = std::max(0LL, start + size); }
   if (stop < 0) { stop = stop + size; }
