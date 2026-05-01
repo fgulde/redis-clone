@@ -73,7 +73,7 @@ private:
 };
 
 /**
- * @brief Command to remove and get the first element in a list, or block until one is available.
+ * @brief Command to remove and get the first element in a list or block until one is available.
  */
 class BlpopCommand : public ICommand {
 public:

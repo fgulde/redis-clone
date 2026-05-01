@@ -1046,3 +1046,4 @@ dkms.conf
 
 .idea/
 .vcpkg_installed/
+.codecrafters
