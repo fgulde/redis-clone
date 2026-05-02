@@ -76,3 +76,19 @@ void TypeCommand::execute(const Command& cmd, const asio::any_io_executor&,
 
   on_reply(std::format("+{}\r\n", type.to_string()));
 }
+
+void IncrCommand::execute(const Command& cmd, const asio::any_io_executor&,
+                          const std::function<void(std::string)>& on_reply) const {
+  if (const auto err = command_utils::check_args(cmd, 1)) {
+    on_reply(*err);
+    return;
+  }
+
+  const std::string& key = cmd.args.at(0);
+
+  if (const auto result = store_.incr(key)) {
+    on_reply(std::format(":{}\r\n", *result));
+  } else {
+    on_reply(result.error());
+  }
+}

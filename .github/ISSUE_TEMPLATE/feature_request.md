@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest a new feature to help us improve
+about: Suggest a new feature to help me improve
 title: "[FEATURE] "
 labels: "type: feature"
 assignees: ''

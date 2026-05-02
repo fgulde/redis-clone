@@ -27,6 +27,7 @@ auto build_registry(Store& store, BlockingManager& blocking_manager) -> CommandR
   registry.register_command(Command::Type::Set, std::make_unique<SetCommand>(store));
   registry.register_command(Command::Type::Get, std::make_unique<GetCommand>(store));
   registry.register_command(Command::Type::TypeCmd, std::make_unique<TypeCommand>(store));
+  registry.register_command(Command::Type::Incr, std::make_unique<IncrCommand>(store));
 
   // List Commands
   registry.register_command(Command::Type::RPush, std::make_unique<RPushCommand>(store, blocking_manager));

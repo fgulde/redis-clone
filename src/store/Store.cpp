@@ -6,6 +6,8 @@
 
 #include <ranges>
 #include <chrono>
+#include <charconv>
+#include <limits>
 #include "../util/StoreUtils.hpp"
 
 void Store::set(const std::string_view key, std::string value) {
@@ -228,4 +230,42 @@ auto Store::xread(const std::vector<std::string_view>& keys, const std::vector<s
   }
 
   return result;
+}
+
+auto Store::incr(const std::string_view key) -> std::expected<long long, std::string> {
+  const std::string k(key);
+  auto it = data_.find(k);
+
+  if (it != data_.end()) {
+    // Check for expiry
+    if (it->second.expires_at && Clock::now() > *it->second.expires_at) {
+      data_.erase(it);
+      it = data_.end();
+    }
+  }
+
+  long long val = 0;
+  if (it == data_.end()) {
+    val = 1;
+    data_[k] = StoreValue{ .value = std::to_string(val), .expires_at = std::nullopt };
+    return val;
+  }
+
+  auto* str = std::get_if<std::string>(&it->second.value);
+  if (!str) {
+    return std::unexpected("-ERR value is not an integer or out of range\r\n");
+  }
+
+  auto [ptr, ec] = std::from_chars(str->data(), str->data() + str->size(), val);
+  if (ec != std::errc() || ptr != str->data() + str->size()) {
+    return std::unexpected("-ERR value is not an integer or out of range\r\n");
+  }
+
+  if (val == std::numeric_limits<long long>::max()) {
+    return std::unexpected("-ERR value is not an integer or out of range\r\n");
+  }
+
+  val++;
+  *str = std::to_string(val);
+  return val;
 }

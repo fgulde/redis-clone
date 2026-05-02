@@ -7,6 +7,7 @@
 #include <string_view>
 #include <vector>
 #include <unordered_map>
+#include <expected>
 #include "StoreValue.hpp"
 #include "types/Stream.hpp"
 
@@ -109,6 +110,14 @@ public:
    * @return The read streams and their entries.
    */
   auto xread(const std::vector<std::string_view>& keys, const std::vector<std::string_view>& ids) const -> std::vector<std::pair<std::string, std::vector<StreamEntry>>>;
+
+  /**
+   * @brief Increments the integer value of a key by one.
+   * If the key does not exist, it is set to 0 before performing the operation.
+   * @param key The key to increment.
+   * @return The value of key after the increment, or an error message.
+   */
+  auto incr(std::string_view key) -> std::expected<long long, std::string>;
 
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
