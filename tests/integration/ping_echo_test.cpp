@@ -17,23 +17,23 @@ namespace {
 }
 
 TEST_F(PingEchoTest, SimplePingReturnsPong) {
-    EXPECT_EQ(client.ping(), "+PONG\r\n");
+    EXPECT_EQ(client.command("ping"), "+PONG\r\n");
 }
 
 TEST_F(PingEchoTest, PingWithMessageReturnsBulkMessage) {
-    EXPECT_EQ(client.ping("hello"), "$5\r\nhello\r\n");
+    EXPECT_EQ(client.command("ping", "hello"), "$5\r\nhello\r\n");
 }
 
 TEST_F(PingEchoTest, MultipleSequentialPingsAllSucceed) {
     for (int i = 0; i < 10; ++i) {
-        EXPECT_EQ(client.ping(), "+PONG\r\n");
+        EXPECT_EQ(client.command("ping"), "+PONG\r\n");
     }
 }
 
 TEST_F(PingEchoTest, EchoReturnsExactArgument) {
-    EXPECT_EQ(client.echo("test-message"), "$12\r\ntest-message\r\n");
+    EXPECT_EQ(client.command("echo", "test-message"), "$12\r\ntest-message\r\n");
 }
 
 TEST_F(PingEchoTest, EchoWithEmptyStringReturnsEmptyBulk) {
-    EXPECT_EQ(client.echo(""), "$0\r\n\r\n");
+    EXPECT_EQ(client.command("echo", ""), "$0\r\n\r\n");
 }

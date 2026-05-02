@@ -30,7 +30,7 @@ TEST(ConcurrentTest, ConcurrentPingsAllReturnPong) {
             start_latch.wait(); // wait for all threads to be ready before starting the test
             for (int j = 0; j < kPingsPerClient; ++j) {
                 // If one of the pings fails, mark this client's result as false.
-                if (client.ping() != "+PONG\r\n") {
+                if (client.command("ping") != "+PONG\r\n") {
                     results.at(i) = false;
                 }
             }
@@ -64,10 +64,10 @@ TEST(ConcurrentTest, ConcurrentSetGetDoNotCrossTalk) {
             latch.count_down();
             latch.wait(); // wait for all threads to be ready before starting the test
 
-            client.set(key, val);
+            client.command("set", key, val);
             const std::string expected = std::format("${}\r\n{}\r\n", val.size(), val);
             for (int j = 0; j < 20; ++j) {
-                if (client.get(key) != expected) {
+                if (client.command("get", key) != expected) {
                     results.at(i) = false;
                 }
             }

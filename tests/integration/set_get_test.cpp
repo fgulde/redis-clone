@@ -20,40 +20,40 @@ namespace {
 }
 
 TEST_F(SetGetTest, SetThenGetReturnsValue) {
-    EXPECT_EQ(client.set("name", "redis"), "+OK\r\n");
-    EXPECT_EQ(client.get("name"), "$5\r\nredis\r\n");
+    EXPECT_EQ(client.command("set", "name", "redis"), "+OK\r\n");
+    EXPECT_EQ(client.command("get", "name"), "$5\r\nredis\r\n");
 }
 
 TEST_F(SetGetTest, GetMissingKeyReturnsNullBulk) {
-    EXPECT_EQ(client.get("ghost"), "$-1\r\n");
+    EXPECT_EQ(client.command("get", "ghost"), "$-1\r\n");
 }
 
 TEST_F(SetGetTest, SetOverwritesPreviousValue) {
-    EXPECT_EQ(client.set("x", "first"), "+OK\r\n");
-    EXPECT_EQ(client.set("x", "second"), "+OK\r\n");
-    EXPECT_EQ(client.get("x"), "$6\r\nsecond\r\n");
+    EXPECT_EQ(client.command("set", "x", "first"), "+OK\r\n");
+    EXPECT_EQ(client.command("set", "x", "second"), "+OK\r\n");
+    EXPECT_EQ(client.command("get", "x"), "$6\r\nsecond\r\n");
 }
 
 TEST_F(SetGetTest, SetWithExExpiresAfterDelay) {
-    EXPECT_EQ(client.set("k", "v", "EX", 1), "+OK\r\n");
-    ASSERT_EQ(client.get("k"), "$1\r\nv\r\n");
+    EXPECT_EQ(client.command("set", "k", "v", "EX", 1), "+OK\r\n");
+    ASSERT_EQ(client.command("get", "k"), "$1\r\nv\r\n");
 
     std::this_thread::sleep_for(1100ms);
-    EXPECT_EQ(client.get("k"), "$-1\r\n");
+    EXPECT_EQ(client.command("get", "k"), "$-1\r\n");
 }
 
 TEST_F(SetGetTest, SetWithPxExpiresAfterDelay) {
-    EXPECT_EQ(client.set("k", "v", "PX", 100), "+OK\r\n");
-    ASSERT_EQ(client.get("k"), "$1\r\nv\r\n");
+    EXPECT_EQ(client.command("set", "k", "v", "PX", 100), "+OK\r\n");
+    ASSERT_EQ(client.command("get", "k"), "$1\r\nv\r\n");
 
     std::this_thread::sleep_for(150ms);
-    EXPECT_EQ(client.get("k"), "$-1\r\n");
+    EXPECT_EQ(client.command("get", "k"), "$-1\r\n");
 }
 
 TEST_F(SetGetTest, SetWithExClearsPreviousTtl) {
-    EXPECT_EQ(client.set("k", "v", "EX", 1), "+OK\r\n");
-    EXPECT_EQ(client.set("k", "v2"), "+OK\r\n");
+    EXPECT_EQ(client.command("set", "k", "v", "EX", 1), "+OK\r\n");
+    EXPECT_EQ(client.command("set", "k", "v2"), "+OK\r\n");
 
     std::this_thread::sleep_for(1100ms);
-    EXPECT_EQ(client.get("k"), "$2\r\nv2\r\n");
+    EXPECT_EQ(client.command("get", "k"), "$2\r\nv2\r\n");
 }

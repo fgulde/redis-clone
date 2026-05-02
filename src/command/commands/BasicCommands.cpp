@@ -6,6 +6,7 @@
 
 #include "BasicCommands.hpp"
 #include "../../util/CommandUtils.hpp"
+#include "../../util/BasicUtils.hpp"
 
 void PingCommand::execute(const Command& cmd, const asio::any_io_executor&,
                           const std::function<void(std::string)>& on_reply) const {
@@ -35,7 +36,7 @@ void SetCommand::execute(const Command& cmd, const asio::any_io_executor&,
     return;
   }
 
-  const auto ttl = command_utils::parse_expiry(cmd);
+  const auto ttl = basic_utils::parse_expiry(cmd);
   if (ttl && ttl->count() <= 0) {
     on_reply("-ERR invalid expire time in 'SET' command\r\n");
     return;

@@ -26,8 +26,8 @@ namespace {
 
 TEST_F(BlpopTest, ReturnsImmediatelyIfListHasElements) {
     std::vector<std::string_view> elements{"a"};
-    client.rpush("mylist", elements);
-    EXPECT_EQ(client.blpop({"mylist", "0"}), "*2\r\n$6\r\nmylist\r\n$1\r\na\r\n");
+    client.command("rpush", "mylist", elements);
+    EXPECT_EQ(client.command("blpop", "mylist", "0"), "*2\r\n$6\r\nmylist\r\n$1\r\na\r\n");
 }
 
 TEST_F(BlpopTest, BlocksAndReturnsWhenElementPushed) {
@@ -35,14 +35,14 @@ TEST_F(BlpopTest, BlocksAndReturnsWhenElementPushed) {
         std::this_thread::sleep_for(50ms);
         TestClient t_client{server.port()};
         std::vector<std::string_view> elements{"b"};
-        t_client.rpush("mylist", elements);
+        t_client.command("rpush", "mylist", elements);
     });
 
-    EXPECT_EQ(client.blpop({"mylist", "0"}), "*2\r\n$6\r\nmylist\r\n$1\r\nb\r\n");
+    EXPECT_EQ(client.command("blpop", "mylist", "0"), "*2\r\n$6\r\nmylist\r\n$1\r\nb\r\n");
 }
 
 TEST_F(BlpopTest, ReturnsNullIfTimeoutExpires) {
-    EXPECT_EQ(client.blpop({"mylist", "0.1"}), "*-1\r\n");
+    EXPECT_EQ(client.command("blpop", "mylist", "0.1"), "*-1\r\n");
 }
 
 TEST_F(BlpopTest, RpushReturnsCorrectLengthWhenUnblocking) {
@@ -58,7 +58,7 @@ TEST_F(BlpopTest, RpushReturnsCorrectLengthWhenUnblocking) {
         }
         cv.notify_one();
 
-        t_client.blpop({"apple", "0"});
+        t_client.command("blpop", "apple", "0");
     };
 
     std::jthread const c1(make_waiting_client);
@@ -74,5 +74,5 @@ TEST_F(BlpopTest, RpushReturnsCorrectLengthWhenUnblocking) {
 
     // Pushing two items while two clients are blocked should return the list length before popping
     std::vector<std::string_view> elements{"raspberry", "blueberry"};
-    EXPECT_EQ(client.rpush("apple", elements), ":2\r\n");
+    EXPECT_EQ(client.command("rpush", "apple", elements), ":2\r\n");
 }

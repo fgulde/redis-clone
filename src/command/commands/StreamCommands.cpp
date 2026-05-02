@@ -4,7 +4,7 @@
 
 #include "StreamCommands.hpp"
 #include <format>
-#include "../../util/CommandUtils.hpp"
+#include "../../util/StreamUtils.hpp"
 
 void XAddCommand::execute(const Command& cmd, const asio::any_io_executor&,
                           const std::function<void(std::string)>& on_reply) const {
@@ -62,14 +62,14 @@ void XRangeCommand::execute(const Command& cmd, const asio::any_io_executor&,
 
 void XReadCommand::execute(const Command& cmd, const asio::any_io_executor& executor,
                            const std::function<void(std::string)>& on_reply) const {
-  const auto parsed = command_utils::parse_xread_args(cmd);
+  const auto parsed = stream_utils::parse_xread_args(cmd);
   if (!parsed.valid) {
     on_reply("-ERR syntax error\r\n");
     return;
   }
 
   // Resolve stream IDs, treating "$" as the ID of the latest entry in the stream
-  const auto resolved_ids = command_utils::resolve_stream_ids(store_, parsed.keys, parsed.ids);
+  const auto resolved_ids = stream_utils::resolve_stream_ids(store_, parsed.keys, parsed.ids);
   std::vector<std::string_view> resolved_id_views;
   for (const auto& r_id : resolved_ids) {
     resolved_id_views.push_back(r_id);
@@ -79,7 +79,7 @@ void XReadCommand::execute(const Command& cmd, const asio::any_io_executor& exec
   // If not and it's a blocking read, set up blocking behavior.
   try {
     if (const auto results = store_.xread(parsed.keys, resolved_id_views); !results.empty()) {
-      on_reply(command_utils::format_stream_entries(results));
+      on_reply(stream_utils::format_stream_entries(results));
       return;
     }
 
@@ -89,7 +89,7 @@ void XReadCommand::execute(const Command& cmd, const asio::any_io_executor& exec
     }
 
     // No entries found, but it's a blocking read, so set up blocking behavior.
-    command_utils::setup_xread_blocking(store_, blocking_manager_, parsed, resolved_ids, executor, on_reply);
+    stream_utils::setup_xread_blocking(store_, blocking_manager_, parsed, resolved_ids, executor, on_reply);
   } catch (const std::exception& e) {
     on_reply(std::format("-ERR {}\r\n", e.what()));
   }
