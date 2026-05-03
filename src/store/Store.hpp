@@ -29,12 +29,12 @@ public:
   void set(std::string_view key, std::string value, std::chrono::milliseconds ttl);
 
   /**
-   * @brief Returns the value for a key, or std::nullopt if not found or expired.
+   * @brief Returns the value for a key, or an error if not found or expired.
    * @param key The key to retrieve.
-   * @return The value associated with the key, or std::nullopt if the key does not exist or has expired.
+   * @return The value associated with the key, or an error if the key does not exist, has expired or is of the wrong type.
    * @note Expired entries are lazily deleted on access.
    */
-  auto get(std::string_view key) -> std::optional<std::string>;
+  auto get(std::string_view key) -> std::expected<std::string, std::string>;
 
   /**
    * @brief Appends values to a list stored at a key. If the key does not exist, it is created as an empty list before appending.
@@ -73,10 +73,10 @@ public:
    * @brief Removes and returns up to `count` elements from the front of the list.
    * @param key The key of the list to pop from.
    * @param count The maximum number of elements to pop. Must be > 0.
-   * @return The removed elements, or std::nullopt if the key does not exist.
+   * @return The removed elements, or an error if the key does not exist or is not a list.
    * If the count exceeds the list size, all elements are removed and returned.
    */
-  auto lpop(std::string_view key, std::size_t count = 1) -> std::optional<std::vector<std::string>>;
+  auto lpop(std::string_view key, std::size_t count = 1) -> std::expected<std::vector<std::string>, std::string>;
 
   /**
    * @brief Returns the type of the value stored at a key.
@@ -90,9 +90,9 @@ public:
    * @param key The key of the stream.
    * @param id The ID of the entry.
    * @param fields Key-value pairs of the entry.
-   * @return The ID of the added entry.
+   * @return The ID of the added entry, or an error message.
    */
-  auto xadd(std::string_view key, std::string_view id, const std::vector<std::pair<std::string, std::string>>& fields) -> std::string;
+  auto xadd(std::string_view key, std::string_view id, const std::vector<std::pair<std::string, std::string>>& fields) -> std::expected<std::string, std::string>;
 
   /**
    * @brief Returns a range of entries from a stream.

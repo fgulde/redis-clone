@@ -82,7 +82,11 @@ void LPopCommand::execute(const Command& cmd, const asio::any_io_executor&,
 
   const auto values = store_.lpop(key, count);
   if (!values) {
-    on_reply("$-1\r\n"); // RESP Null bulk string
+    if (values.error().find("-WRONGTYPE") != std::string::npos) {
+      on_reply(values.error());
+    } else {
+      on_reply("$-1\r\n"); // RESP Null bulk string
+    }
     return;
   }
 
@@ -113,8 +117,9 @@ void BlpopCommand::execute(const Command& cmd, const asio::any_io_executor& exec
   // Before blocking, check if there are any elements available in the specified lists.
   // If so, return immediately without blocking.
   for (const auto& key : keys) {
-    // Returns std::nullopt if the kye does not exist, so we can treat non-existent keys as empty lists.
-    if (const auto values = store_.lpop(key, 1)) {
+    // We can treat non-existent keys as empty lists.
+    const auto values = store_.lpop(key, 1);
+    if (values) {
       const auto& val = values->at(0);
       on_reply(std::format("*2\r\n${}\r\n{}\r\n${}\r\n{}\r\n",
                        key.size(), key, val.size(), val));

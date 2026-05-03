@@ -57,8 +57,13 @@ void GetCommand::execute(const Command& cmd, const asio::any_io_executor&,
     on_reply(*err);
     return;
   }
-  if (const auto value = store_.get(cmd.args.at(0)); !value) {
-    on_reply("$-1\r\n"); // RESP Null bulk string
+  const auto value = store_.get(cmd.args.at(0));
+  if (!value) {
+    if (value.error().find("-WRONGTYPE") != std::string::npos) {
+      on_reply(value.error());
+    } else {
+      on_reply("$-1\r\n"); // RESP Null bulk string
+    }
   } else {
     on_reply(std::format("${}\r\n{}\r\n", value->size(), *value));
   }

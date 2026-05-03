@@ -19,20 +19,20 @@ void Store::set(const std::string_view key, std::string value, const std::chrono
   data_[std::string(key)] = StoreValue{ .value=std::move(value), .expires_at=expires_at };
 }
 
-auto Store::get(const std::string_view key) -> std::optional<std::string> {
+auto Store::get(const std::string_view key) -> std::expected<std::string, std::string> {
   const auto it = data_.find(std::string(key));
   if (it == data_.end()) {
-    return std::nullopt;
+    return std::unexpected("Key not found");
   }
   if (it->second.expires_at && Clock::now() > *it->second.expires_at) {
     data_.erase(it);
-    return std::nullopt; // Entry has expired
+    return std::unexpected("Key not found"); // Entry has expired
   }
 
   if (auto* str = std::get_if<std::string>(&it->second.value)) {
     return *str;
   }
-  return std::nullopt; // Not a string
+  return std::unexpected("-WRONGTYPE Operation against a key holding the wrong kind of value");
 }
 
 auto Store::rpush(const std::string_view key, const std::vector<std::string> &values) -> std::size_t {
@@ -97,12 +97,12 @@ auto Store::llen(const std::string_view key) const -> std::size_t {
   return 0;
 }
 
-auto Store::lpop(const std::string_view key, const std::size_t count) -> std::optional<std::vector<std::string>> {
+auto Store::lpop(const std::string_view key, const std::size_t count) -> std::expected<std::vector<std::string>, std::string> {
   const auto it = data_.find(std::string(key));
-  if (it == data_.end()) { return std::nullopt; }
+  if (it == data_.end()) { return std::unexpected("Key not found"); }
 
   auto* list_ptr = std::get_if<std::deque<std::string>>(&it->second.value);
-  if (list_ptr == nullptr) { return std::nullopt; }
+  if (list_ptr == nullptr) { return std::unexpected("-WRONGTYPE Operation against a key holding the wrong kind of value"); }
 
   auto& list = *list_ptr;
   const std::size_t n = std::min(count, list.size());
@@ -131,8 +131,13 @@ auto Store::type(const std::string_view key) -> StoreType {
   return it->second.type();
 }
 
-auto Store::xadd(const std::string_view key, const std::string_view id, const std::vector<std::pair<std::string, std::string>>& fields) -> std::string {
+auto Store::xadd(const std::string_view key, const std::string_view id, const std::vector<std::pair<std::string, std::string>>& fields) -> std::expected<std::string, std::string> {
   const std::string k(key);
+  auto it = data_.find(k);
+  if (it != data_.end() && !std::holds_alternative<Stream>(it->second.value)) {
+    return std::unexpected("-WRONGTYPE Operation against a key holding the wrong kind of value");
+  }
+
   auto& store_val = data_[k];
   if (!std::holds_alternative<Stream>(store_val.value)) {
     store_val.value = Stream{};
@@ -144,14 +149,18 @@ auto Store::xadd(const std::string_view key, const std::string_view id, const st
     last_id = stream.entries.back().id;
   }
 
-  std::string new_id = store_utils::generate_stream_id(id, last_id);
+  try {
+    std::string new_id = store_utils::generate_stream_id(id, last_id);
 
-  StreamEntry entry;
-  entry.id = new_id;
-  entry.fields = fields;
-  stream.entries.push_back(std::move(entry));
+    StreamEntry entry;
+    entry.id = new_id;
+    entry.fields = fields;
+    stream.entries.push_back(std::move(entry));
 
-  return new_id;
+    return new_id;
+  } catch (const std::invalid_argument& e) {
+    return std::unexpected("-ERR " + std::string(e.what()));
+  }
 }
 
 auto Store::xrange(const std::string_view key, const std::string_view start_id, const std::string_view end_id) const -> std::vector<StreamEntry> {
@@ -201,9 +210,8 @@ auto Store::xread(const std::vector<std::string_view>& keys, const std::vector<s
     long long target_ms = 0;
     uint64_t target_seq = 0;
 
-    // Attempt to parse ID. Handled like xrange lower bound, but exclusive.
+    // Attempt to parse ID. Handled like xrange lower bound but exclusive.
     // However, if the ID doesn't have '-', we must treat it properly.
-    // We can use parse_stream_bound which already does this.
     store_utils::parse_stream_bound(id, target_ms, target_seq, true);
 
     const auto it = data_.find(std::string(key));

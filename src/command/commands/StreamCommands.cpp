@@ -22,12 +22,12 @@ void XAddCommand::execute(const Command& cmd, const asio::any_io_executor&,
     fields.emplace_back(cmd.args.at(i), cmd.args.at(i + 1));
   }
 
-  try {
-    std::string new_id = store_.xadd(key, id, fields);
+  const auto result = store_.xadd(key, id, fields);
+  if (result) {
     blocking_manager_.serve_xread_waiters(key);
-    on_reply(std::format("${}\r\n{}\r\n", new_id.size(), new_id));
-  } catch (const std::exception& e) {
-    on_reply(std::format("-ERR {}\r\n", e.what()));
+    on_reply(std::format("${}\r\n{}\r\n", result->size(), *result));
+  } else {
+    on_reply(std::format("{}\r\n", result.error()));
   }
 }
 
