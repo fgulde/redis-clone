@@ -38,8 +38,15 @@ add_library(redis_lib STATIC
         src/net/Connection.hpp
         src/net/Server.cpp
         src/net/Server.hpp
-        src/store/Store.cpp
         src/store/Store.hpp
+        src/store/StringStore.cpp
+        src/store/StringStore.hpp
+        src/store/ListStore.cpp
+        src/store/ListStore.hpp
+        src/store/StreamStore.cpp
+        src/store/StreamStore.hpp
+        src/store/types/StreamIdUtils.cpp
+        src/store/types/StreamIdUtils.hpp
         src/resp/RespParser.cpp
         src/resp/RespParser.hpp
         src/command/Command.hpp

@@ -22,7 +22,7 @@ Areas of exploration include:
 
 Already implemented:
 - RESP2 protocol parsing (`SimpleString`, `BulkString`, `Integer`, `Array`, `Null`)
-- Key-Value commands (`SET`, `GET`, `TYPE`)
+- Key-Value commands (`SET`, `GET`, `TYPE`, `INCR`)
 - Key expiration via `EX` (seconds) and `PX` (milliseconds) flags on `SET`
 - Basic utility commands (`PING`, `ECHO`)
 - List commands (`RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`, `BLPOP`)
@@ -30,8 +30,8 @@ Already implemented:
 - Auto-generated IDs (`*`, `ms-*`) for `XADD`, infinite bounds (`-`, `+`) for `XRANGE`, and `$` ID for `XREAD`
 - Lazy deletion of expired keys on access
 - Multithreaded architecture (multi-reactor pattern): thread pool (`network_ctx`) handles async I/O, separated from a single-threaded lock-free store execution loop (`store_ctx`)
+- Modular architecture (networking, RESP parsing, command handling, storage/sub-stores)
 - Support for customizable port via `--port` command line argument and `REDIS_PORT` environment variable
-- Modular architecture (networking, RESP parsing, command handling, storage)
 
 Planned:
 - RDB Persistence
@@ -136,54 +136,54 @@ classDiagram
     class Store {
         + set(...)
         + get(...)
+        + type(...)
+        + ...()
     }
-    class SetCommand
-    class BlpopCommand
+    class StringStore
+    class ListStore
+    class StreamStore
     
     CommandHandler "1" *-- "1" CommandRegistry : owns
     CommandRegistry "1" *-- "*" ICommand : manages
     ICommand <|-- SetCommand : implements
     ICommand <|-- BlpopCommand : implements
     ICommand "*" --> "1" Store : accesses
+    Store "1" *-- "1" StringStore : delegates
+    Store "1" *-- "1" ListStore : delegates
+    Store "1" *-- "1" StreamStore : delegates
 ```
 
 ## Project Structure
 ```
 src/
-├── main.cpp                  # Entry point, sets up and runs the server
+├── main.cpp                          # Entry point, sets up and runs the server
 ├── command/
-│   ├── Command.hpp           # Command struct and type enum
-│   ├── CommandHandler.hpp
-│   ├── CommandHandler.cpp    # Processes requests via the registry
-│   ├── CommandRegistry.hpp
-│   ├── CommandRegistry.cpp   # Maps command types to target implementations
-│   ├── ICommand.hpp          # Abstract base for executable commands
-│   └── commands/             # Concrete command implementations
-│       ├── BasicCommands.hpp # PING, SET, GET, ECHO, etc.
-│       ├── BasicCommands.cpp
-│       ├── ListCommands.hpp  # LPUSH, RPUSH, BLPOP, etc.
-│       ├── ListCommands.cpp
-│       ├── StreamCommands.hpp # XADD, XRANGE, XREAD
-│       └── StreamCommands.cpp
+│   ├── Command.hpp                   # Command struct and type enum
+│   ├── CommandHandler.hpp / .cpp     # Processes requests via the registry
+│   ├── CommandRegistry.hpp / .cpp    # Maps command types to target implementations
+│   ├── ICommand.hpp                  # Abstract base for executable commands
+│   └── commands/                     # Concrete command implementations
+│       ├── BasicCommands.hpp / .cpp  # PING, SET, GET, ECHO, etc.
+│       ├── ListCommands.hpp / .cpp   # LPUSH, RPUSH, BLPOP, etc.
+│       └── StreamCommands.hpp / .cpp # XADD, XRANGE, XREAD
 ├── net/
-│   ├── Server.hpp
-│   ├── Server.cpp            # Async TCP acceptor, manages connections
-│   ├── Connection.hpp
-│   └── Connection.cpp        # Per-client async read loop
+│   ├── Server.hpp / .cpp             # Async TCP acceptor, manages connections
+│   └── Connection.hpp / .cpp         # Per-client async read loop
 ├── resp/
-│   ├── RespValue.hpp         # RESP value type
-│   ├── RespParser.hpp
-│   └── RespParser.cpp        # RESP2 protocol parser
+│   ├── RespValue.hpp                 # RESP value type
+│   └── RespParser.hpp / .cpp         # RESP2 protocol parser
 ├── store/
-│   ├── Store.hpp
-│   ├── Store.cpp             # In-memory key-value store with TTL support
-│   ├── StoreValue.hpp        # Data structures for stored values
-│   ├── BlockingManager.hpp
-│   ├── BlockingManager.cpp   # Manages async waiting clients (BLPOP, etc.)
+│   ├── Store.hpp                     # Header-only facade for specialized sub-stores
+│   ├── StoreValue.hpp                # Data structures for stored values
+│   ├── StringStore.hpp / .cpp        # Handles strings, INCR and TTL/expiry
+│   ├── ListStore.hpp / .cpp          # Handles list operations (RPUSH, LPOP, etc.)
+│   ├── StreamStore.hpp / .cpp        # Handles stream operations (XADD, etc.)
+│   ├── BlockingManager.hpp / .cpp    # Manages async waiting clients (BLPOP, etc.)
 │   └── types/
-│       └── Stream.hpp        # Stream data structure
+│       ├── Stream.hpp                # Stream data structure
+│       └── StreamIdUtils.hpp / .cpp  # Stream ID parsing and generation
 └── util/
-    ├── CommandUtils.hpp      # Command parsing utilities
-    ├── Logger.hpp            # Simple logger implementation
-    └── StringUtils.hpp       # String helper utilities
+    ├── CommandUtils.hpp              # Command parsing utilities
+    ├── Logger.hpp                    # Simple logger implementation
+    └── StringUtils.hpp               # String helper utilities
 ```

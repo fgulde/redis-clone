@@ -8,17 +8,26 @@
 #include <vector>
 #include <unordered_map>
 #include <expected>
+#include <chrono>
 #include "StoreValue.hpp"
 #include "types/Stream.hpp"
+#include "StringStore.hpp"
+#include "ListStore.hpp"
+#include "StreamStore.hpp"
 
 class Store {
 public:
-  Store() = default;
+  Store()
+    : string_store_(data_)
+    , list_store_(data_)
+    , stream_store_(data_) {}
 
   /**
    * @brief Stores a key-value pair without expiry.
    */
-  void set(std::string_view key, std::string value);
+  void set(const std::string_view key, std::string value) const {
+    string_store_.set(key, std::move(value));
+  }
 
   /**
    * @brief Stores a key-value pair with a TTL.
@@ -26,7 +35,9 @@ public:
    * @param value The value to associate with the key.
    * @param ttl Time-to-live. Must be > 0.
    */
-  void set(std::string_view key, std::string value, std::chrono::milliseconds ttl);
+  void set(const std::string_view key, std::string value, const std::chrono::milliseconds ttl) const {
+    string_store_.set(key, std::move(value), ttl);
+  }
 
   /**
    * @brief Returns the value for a key or an error if not found or expired.
@@ -34,7 +45,9 @@ public:
    * @return The value associated with the key, or an error if the key does not exist, has expired or is of the wrong type.
    * @note Expired entries are lazily deleted on access.
    */
-  auto get(std::string_view key) -> std::expected<std::string, std::string>;
+  auto get(const std::string_view key) const -> std::expected<std::string, std::string> {
+    return string_store_.get(key);
+  }
 
   /**
    * @brief Appends values to a list stored at a key. If the key does not exist, it is created as an empty list before appending.
@@ -42,7 +55,9 @@ public:
    * @param values The values to append to the list.
    * @return The length of the list after the push operation.
    */
-  auto rpush(std::string_view key, const std::vector<std::string>& values) -> std::size_t;
+  auto rpush(const std::string_view key, const std::vector<std::string>& values) const -> std::size_t {
+    return list_store_.rpush(key, values);
+  }
 
   /**
    * @brief Prepends values to a list stored at a key. If the key does not exist, it is created as an empty list before prepending.
@@ -50,7 +65,9 @@ public:
    * @param values The values to prepend to the list.
    * @return The length of the list after the push operation.
    */
-  auto lpush(std::string_view key, const std::vector<std::string>& values) -> std::size_t;
+  auto lpush(const std::string_view key, const std::vector<std::string>& values) const -> std::size_t {
+    return list_store_.lpush(key, values);
+  }
 
   /**
    * @brief Returns a subrange of the list stored at a key.
@@ -60,14 +77,18 @@ public:
    * @return The requested elements, or an empty vector if the key does not exist,
    *         start >= list size, or start > stop.
    */
-  auto lrange(std::string_view key, long long start, long long stop) const -> std::vector<std::string>;
+  auto lrange(const std::string_view key, const long long start, const long long stop) const -> std::vector<std::string> {
+    return list_store_.lrange(key, start, stop);
+  }
 
   /**
    * @brief Returns the length of the list stored at a key.
    * @param key The key of the list to check.
    * @return The length of the list stored at the key, or 0 if the key does not exist or is not a list.
    */
-  auto llen(std::string_view key) const -> std::size_t;
+  auto llen(const std::string_view key) const -> std::size_t {
+    return list_store_.llen(key);
+  }
 
   /**
    * @brief Removes and returns up to `count` elements from the front of the list.
@@ -76,14 +97,28 @@ public:
    * @return The removed elements, or an error if the key does not exist or is not a list.
    * If the count exceeds the list size, all elements are removed and returned.
    */
-  auto lpop(std::string_view key, std::size_t count = 1) -> std::expected<std::vector<std::string>, std::string>;
+  auto lpop(const std::string_view key, const std::size_t count = 1) const -> std::expected<std::vector<std::string>, std::string> {
+    return list_store_.lpop(key, count);
+  }
 
   /**
    * @brief Returns the type of the value stored at a key.
    * @param key The key to check.
    * @return The type of the value, or None if the key does not exist.
    */
-  auto type(std::string_view key) -> StoreType;
+  auto type(const std::string_view key) -> StoreType {
+    const auto storeEntry = data_.find(std::string(key));
+    if (storeEntry == data_.end()) {
+      return StoreType(StoreType::Type::None);
+    }
+
+    if (storeEntry->second.get_expires_at() && Clock::now() > *storeEntry->second.get_expires_at()) {
+      data_.erase(storeEntry);
+      return StoreType(StoreType::Type::None);
+    }
+
+    return storeEntry->second.type();
+  }
 
   /**
    * @brief Appends an entry to a stream.
@@ -92,7 +127,9 @@ public:
    * @param fields Key-value pairs of the entry.
    * @return The ID of the added entry, or an error message.
    */
-  auto xadd(std::string_view key, StreamId stream_id, const std::vector<std::pair<std::string, std::string>>& fields) -> std::expected<std::string, std::string>;
+  auto xadd(const std::string_view key, const StreamId stream_id, const std::vector<std::pair<std::string, std::string>>& fields) const -> std::expected<std::string, std::string> {
+    return stream_store_.xadd(key, stream_id, fields);
+  }
 
   /**
    * @brief Returns a range of entries from a stream.
@@ -100,7 +137,9 @@ public:
    * @param range The range of entries to retrieve, specified by start and end IDs.
    * @return The range of stream entries.
    */
-  auto xrange(std::string_view key, const StreamRange &range) const -> std::vector<StreamEntry>;
+  auto xrange(const std::string_view key, const StreamRange &range) const -> std::vector<StreamEntry> {
+    return stream_store_.xrange(key, range);
+  }
 
   /**
    * @brief Reads from multiple streams, returning entries with IDs strictly greater than the requested ID.
@@ -108,7 +147,9 @@ public:
    * @param ids The starting IDs.
    * @return The read streams and their entries.
    */
-  auto xread(const std::vector<std::string_view>& keys, const std::vector<std::string_view>& ids) const -> std::vector<std::pair<std::string, std::vector<StreamEntry>>>;
+  auto xread(const std::vector<std::string_view>& keys, const std::vector<std::string_view>& ids) const -> std::vector<std::pair<std::string, std::vector<StreamEntry>>> {
+    return stream_store_.xread(keys, ids);
+  }
 
   /**
    * @brief Increments the integer value of a key by one.
@@ -116,11 +157,17 @@ public:
    * @param key The key to increment.
    * @return The value of the key after the increment, or an error message.
    */
-  auto incr(std::string_view key) -> std::expected<long long, std::string>;
+  auto incr(const std::string_view key) const -> std::expected<long long, std::string> {
+    return string_store_.incr(key);
+  }
 
 private:
   using Clock = std::chrono::steady_clock; ///< Steady clock for measuring TTL, unaffected by system time changes
   using TimePoint = Clock::time_point; ///< Represents the expiration time of an entry
 
   std::unordered_map<std::string, StoreValue> data_; ///< Main storage for all key-value pairs
+
+  StringStore string_store_;
+  ListStore list_store_;
+  StreamStore stream_store_;
 };
