@@ -17,24 +17,13 @@ public:
   RespParser() = default;
 
   /**
-   * Public wrapper method for checking input and calling parse_value, which parses the input string into a RespValue.
+   * Main parsing function that converts the input string into a RespValue iteratively.
    * @param input Input string to parse
    * @return Parsed RespValue, or std::nullopt if parsing failed
    */
-  auto parse(std::string_view input) -> std::optional<RespValue>;
-
+  static auto parse(std::string_view input) -> std::optional<RespValue>;
 private:
-  /**
-   * Main parsing function that determines the type of RESP value based on the first character
-   * and delegates to the appropriate parsing function.
-   * It gets called recursively for nested arrays, allowing for parsing of complex RESP structures.
-   * @param input Input string to parse
-   * @param pos Current position in the input string (will be updated as parsing progresses)
-   * @return Parsed RespValue, or std::nullopt if parsing failed
-   */
-  auto parse_value(std::string_view input, std::size_t& pos) -> std::optional<RespValue>;
   static auto parse_simple_string(std::string_view input, std::size_t &pos) -> std::optional<RespValue>;
   static auto parse_integer(std::string_view input, std::size_t& pos) -> std::optional<RespValue>;
   static auto parse_bulk_string(std::string_view input, std::size_t& pos) -> std::optional<RespValue>;
-  auto parse_array(std::string_view input, std::size_t& pos) -> std::optional<RespValue>;
 };

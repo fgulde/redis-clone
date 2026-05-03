@@ -7,46 +7,52 @@
 #include <thread>
 #include <chrono>
 TEST(StoreTest, SetGetRoundTrip) {
-    Store s;
-    s.set("key1", "value1");
-    const auto val = s.get("key1");
+    Store store;
+    store.set("key1", "value1");
+    const auto val = store.get("key1");
     ASSERT_TRUE(val.has_value());
     EXPECT_EQ(val.value(), "value1");
 }
 TEST(StoreTest, GetMissingKey) {
-    Store s;
-    EXPECT_FALSE(s.get("missing").has_value());
+    Store store;
+    EXPECT_FALSE(store.get("missing").has_value());
 }
 TEST(StoreTest, SetWithExExpiry) {
-    Store s;
-    s.set("key_ex", "val", std::chrono::milliseconds(50));
-    EXPECT_TRUE(s.get("key_ex").has_value());
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    EXPECT_FALSE(s.get("key_ex").has_value());
+    Store store;
+    constexpr short ttl_ms{ 50 };
+    constexpr short sleep_ms{ 100 };
+
+    store.set("key_ex", "val", std::chrono::milliseconds(ttl_ms));
+    EXPECT_TRUE(store.get("key_ex").has_value());
+    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+    EXPECT_FALSE(store.get("key_ex").has_value());
 }
 TEST(StoreTest, OverwriteClearsTTL) {
-    Store s;
-    s.set("key", "val", std::chrono::milliseconds(50));
-    s.set("key", "new_val"); // should have no TTL
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    const auto val = s.get("key");
+    Store store;
+    constexpr short ttl_ms{ 50 };
+    constexpr short sleep_ms{ 100 };
+
+    store.set("key", "val", std::chrono::milliseconds(ttl_ms));
+    store.set("key", "new_val"); // should have no TTL
+    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
+    const auto val = store.get("key");
     ASSERT_TRUE(val.has_value());
     EXPECT_EQ(val.value(), "new_val");
 }
 
 TEST(StoreTest, TypeString) {
-    Store s;
-    s.set("key_str", "val");
-    EXPECT_EQ(s.type("key_str").to_string(), "string");
+    Store store;
+    store.set("key_str", "val");
+    EXPECT_EQ(store.type("key_str").to_string(), "string");
 }
 
 TEST(StoreTest, TypeList) {
-    Store s;
-    s.rpush("key_list", {"elem1", "elem2"});
-    EXPECT_EQ(s.type("key_list").to_string(), "list");
+    Store store;
+    store.rpush("key_list", {"elem1", "elem2"});
+    EXPECT_EQ(store.type("key_list").to_string(), "list");
 }
 
 TEST(StoreTest, TypeNone) {
-    Store s;
-    EXPECT_EQ(s.type("missing_key").to_string(), "none");
+    Store store;
+    EXPECT_EQ(store.type("missing_key").to_string(), "none");
 }

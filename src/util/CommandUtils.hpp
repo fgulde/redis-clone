@@ -7,7 +7,9 @@
 #include <string>
 #include <optional>
 #include <format>
+#include <chrono>
 #include "../command/Command.hpp"
+#include "StringUtils.hpp"
 
 /**
  * @brief Utilities for command handling.
@@ -25,6 +27,29 @@ inline auto check_args(const Command& cmd, const std::size_t min_args) -> std::o
     return std::format("-ERR wrong number of arguments for '{}' command\r\n", cmd.name);
   }
   return std::nullopt;
+}
+
+  /**
+ * @brief Parses optional expiry from a SET command.
+ * @param cmd The SET command.
+ * @return Expiry duration, or std::nullopt if no expiry flag was given.
+ * @note Supports EX (seconds) and PX (milliseconds) flags.
+ */
+inline auto parse_expiry(const Command& cmd) -> std::optional<std::chrono::milliseconds> {
+for (std::size_t i = 2; i + 1 < cmd.args.size(); i += 2) {
+  const auto option = string_utils::lowercase(cmd.args.at(i));
+
+  if (option == "ex") {
+    constexpr int seconds_in_millis{ 1000 };
+    const long long seconds = std::stoll(cmd.args.at(i + 1));
+    return std::chrono::milliseconds(seconds * seconds_in_millis);
+  }
+  if (option == "px") {
+    const long long milliseconds = std::stoll(cmd.args.at(i + 1));
+    return std::chrono::milliseconds(milliseconds);
+  }
+}
+return std::nullopt;
 }
 
 } // namespace command_utils

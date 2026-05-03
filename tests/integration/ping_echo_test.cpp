@@ -25,7 +25,8 @@ TEST_F(PingEchoTest, PingWithMessageReturnsBulkMessage) {
 }
 
 TEST_F(PingEchoTest, MultipleSequentialPingsAllSucceed) {
-    for (int i = 0; i < 10; ++i) {
+    constexpr short num_pings{ 10 };
+    for (int i = 0; i < num_pings; ++i) {
         EXPECT_EQ(client.command("ping"), "+PONG\r\n");
     }
 }

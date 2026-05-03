@@ -7,7 +7,7 @@
 #include "ListCommands.hpp"
 #include "../../util/CommandUtils.hpp"
 
-void RPushCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void RPushCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                            const std::function<void(std::string)>& on_reply) const {
   if (const auto err = command_utils::check_args(cmd, 2)) {
     on_reply(*err);
@@ -22,7 +22,7 @@ void RPushCommand::execute(const Command& cmd, const asio::any_io_executor&,
   on_reply(std::format(":{}\r\n", length));
 }
 
-void LPushCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void LPushCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                            const std::function<void(std::string)>& on_reply) const {
   if (const auto err = command_utils::check_args(cmd, 2)) {
     on_reply(*err);
@@ -37,7 +37,7 @@ void LPushCommand::execute(const Command& cmd, const asio::any_io_executor&,
   on_reply(std::format(":{}\r\n", length));
 }
 
-void LRangeCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void LRangeCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                             const std::function<void(std::string)>& on_reply) const {
   if (const auto err = command_utils::check_args(cmd, 3)) {
     on_reply(*err);
@@ -57,7 +57,7 @@ void LRangeCommand::execute(const Command& cmd, const asio::any_io_executor&,
   on_reply(response);
 }
 
-void LLenCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void LLenCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                           const std::function<void(std::string)>& on_reply) const {
   if (const auto err = command_utils::check_args(cmd, 1)) {
     on_reply(*err);
@@ -69,7 +69,7 @@ void LLenCommand::execute(const Command& cmd, const asio::any_io_executor&,
   on_reply(std::format(":{}\r\n", length));
 }
 
-void LPopCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void LPopCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                           const std::function<void(std::string)>& on_reply) const {
   if (const auto err = command_utils::check_args(cmd, 1)) {
     on_reply(*err);
@@ -82,7 +82,7 @@ void LPopCommand::execute(const Command& cmd, const asio::any_io_executor&,
 
   const auto values = store_.lpop(key, count);
   if (!values) {
-    if (values.error().find("-WRONGTYPE") != std::string::npos) {
+    if (values.error().contains("-WRONGTYPE")) {
       on_reply(values.error());
     } else {
       on_reply("$-1\r\n"); // RESP Null bulk string
@@ -118,8 +118,7 @@ void BlpopCommand::execute(const Command& cmd, const asio::any_io_executor& exec
   // If so, return immediately without blocking.
   for (const auto& key : keys) {
     // We can treat non-existent keys as empty lists.
-    const auto values = store_.lpop(key, 1);
-    if (values) {
+    if (const auto values = store_.lpop(key, 1)) {
       const auto& val = values->at(0);
       on_reply(std::format("*2\r\n${}\r\n{}\r\n${}\r\n{}\r\n",
                        key.size(), key, val.size(), val));
@@ -146,8 +145,8 @@ void BlpopCommand::execute(const Command& cmd, const asio::any_io_executor& exec
   // Set up the timer callback to handle the timeout case.
   // If the timer expires before any element is pushed to the monitored lists, it will unregister the BLPOP callback
   // and return a RESP Null array response.
-  timer->async_wait([this, id_ptr, on_reply](const asio::error_code& ec) -> void {
-    if (!ec) {
+  timer->async_wait([this, id_ptr, on_reply](const asio::error_code& errorCode) -> void {
+    if (!errorCode) {
       blocking_manager_.unregister_blpop(*id_ptr);
       on_reply("*-1\r\n");
     }

@@ -18,7 +18,7 @@ using asio::ip::tcp;
  */
 class Server {
 public:
-  Server(asio::io_context& network_ctx, asio::io_context& store_ctx, unsigned short port);
+  Server(asio::io_context& network_ctx, unsigned short port, asio::io_context& store_ctx);
   void run(); /// Public wrapper method for calling do_accept()
 
   auto port() const -> unsigned short { return acceptor_.local_endpoint().port(); }

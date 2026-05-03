@@ -5,7 +5,23 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
+
+/**
+ * @brief Wrapper for a stream ID to avoid easily swappable parameters.
+ */
+struct StreamId {
+  std::string_view value;
+};
+
+/**
+ * @brief Represents a range of stream IDs.
+ */
+struct StreamRange {
+  std::string_view start;
+  std::string_view end;
+};
 
 /**
  * @brief Represents a single entry in a Redis stream.

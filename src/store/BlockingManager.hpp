@@ -19,29 +19,39 @@ public:
     CallbackType callback;
   };
 
-  auto register_callbacks(const std::vector<std::string>& keys, CallbackType cb) -> uint64_t {
-    const uint64_t id = next_id_++;
-    id_to_keys_[id] = keys;
+  auto register_callbacks(const std::vector<std::string>& keys, CallbackType callback) -> uint64_t {
+    const uint64_t callbackId = next_id_++;
+    id_to_keys_[callbackId] = keys;
     for (const auto& key : keys) {
-      callbacks_[key].push_back({id, cb});
+      callbacks_[key].push_back({callbackId, callback});
     }
-    return id;
+    return callbackId;
   }
 
-  void unregister(uint64_t id) {
-    const auto keys_it = id_to_keys_.find(id);
-    if (keys_it == id_to_keys_.end()) return;
+  void unregister(uint64_t callbackId) {
+    const auto keys_it = id_to_keys_.find(callbackId);
+    if (keys_it == id_to_keys_.end()) { return; }
 
     for (const auto& key : keys_it->second) {
-      auto& q = callbacks_[key];
-      std::erase_if(q, [id](const auto& reg) { return reg.id == id; });
-      if (q.empty()) {
+      auto& callbackList = callbacks_[key];
+      std::erase_if(callbackList, [callbackId](const auto& reg) -> auto { return reg.id == callbackId; });
+      if (callbackList.empty()) {
         callbacks_.erase(key);
       }
     }
     id_to_keys_.erase(keys_it);
   }
 
+  // Getters
+  auto find(const std::string& key) -> std::unordered_map<std::string, std::deque<Registration>>::iterator {
+    return callbacks_.find(key);
+  }
+
+  auto end() -> std::unordered_map<std::string, std::deque<Registration>>::iterator {
+    return callbacks_.end();
+  }
+
+private:
   std::unordered_map<std::string, std::deque<Registration>> callbacks_;
   std::unordered_map<uint64_t, std::vector<std::string>> id_to_keys_;
   uint64_t next_id_ = 1;
@@ -61,12 +71,12 @@ public:
   /**
    * @brief Registers a callback for BLPOP. Returns a unique ID for the registration.
    */
-  auto register_blpop(const std::vector<std::string>& keys, BlpopCallback cb) -> uint64_t;
+  auto register_blpop(const std::vector<std::string>& keys, BlpopCallback callback) -> uint64_t;
 
   /**
    * @brief Unregisters a BLPOP callback by its ID.
    */
-  void unregister_blpop(uint64_t id);
+  void unregister_blpop(uint64_t callbackId);
 
   /**
    * @brief Serves waiting BLPOP clients using elements from the given key in the store.
@@ -78,12 +88,12 @@ public:
   /**
    * @brief Registers a callback for XREAD BLOCK. Returns a unique ID for the registration.
    */
-  auto register_xread(const std::vector<std::string>& keys, XReadCallback cb) -> uint64_t;
+  auto register_xread(const std::vector<std::string>& keys, XReadCallback callback) -> uint64_t;
 
   /**
    * @brief Unregisters an XREAD callback by its ID.
    */
-  void unregister_xread(uint64_t id);
+  void unregister_xread(uint64_t callbackId);
 
   /**
    * @brief Serves waiting XREAD clients indicating new data for the given key in the store.

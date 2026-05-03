@@ -3,15 +3,15 @@
 //
 
 #pragma once
-#include <cstdint>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 /**
  * Bundles the transferred RESP2 message in a processable object
  **/
 struct RespValue {
-  enum class Type : std::uint8_t { SimpleString, Integer, BulkString, Array, Null };
+  enum class Type : uint8_t { SimpleString, Integer, BulkString, Array, Null };
 
   Type type{};
   std::string str; ///< Used by SimpleString, BulkString, and Integer. Empty for Array and Null.

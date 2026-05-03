@@ -8,19 +8,19 @@ namespace {
 }
 
 TEST_F(TypeTest, StringType) {
-    TestClient client(server_->port());
+    TestClient client(server().port());
 
-    const auto set_resp = client.command("set", "mykey", "myval");
+    const auto set_resp = client.command("set", "my-key", "my-val");
     EXPECT_EQ(set_resp, "+OK\r\n");
 
-    const auto type_resp = client.command("type", "mykey");
+    const auto type_resp = client.command("type", "my-key");
     EXPECT_EQ(type_resp, "+string\r\n");
 }
 
 TEST_F(TypeTest, ListType) {
-    TestClient client(server_->port());
+    TestClient client(server().port());
 
-    std::vector<std::string_view> elements = {"elem"};
+    constexpr std::array<std::string_view, 1> elements = {"elem"};
     const auto push_resp = client.command("rpush", "mylist", elements);
     EXPECT_EQ(push_resp, ":1\r\n");
 
@@ -29,7 +29,7 @@ TEST_F(TypeTest, ListType) {
 }
 
 TEST_F(TypeTest, MissingTypeIsNone) {
-    TestClient client(server_->port());
+    TestClient client(server().port());
 
     const auto type_resp = client.command("type", "non_existent_key");
     EXPECT_EQ(type_resp, "+none\r\n");

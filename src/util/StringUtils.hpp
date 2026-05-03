@@ -10,11 +10,11 @@
 namespace string_utils {
   /**
    * Helper function to convert a single character to lowercase.
-   * @param c A single character to convert to lowercase if it's an uppercase letter. Non-uppercase letters are returned unchanged.
+   * @param character A single character to convert to lowercase if it's an uppercase letter. Non-uppercase letters are returned unchanged.
    * @return Lowercase character.
    */
-  inline auto to_lower(const char c) -> char {
-    return (c >= 'A' && c <= 'Z') ? static_cast<char>(c + ('a' - 'A')) : c;
+  inline auto to_lower(const char character) -> char {
+    return (character >= 'A' && character <= 'Z') ? static_cast<char>(character + ('a' - 'A')) : character;
   }
 
   /**

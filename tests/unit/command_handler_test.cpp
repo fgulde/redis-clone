@@ -13,11 +13,6 @@
 namespace {
     class CommandHandlerTest : public ::testing::Test {
     protected:
-        Store store;
-        BlockingManager blocking_manager;
-        CommandHandler handler{store, blocking_manager};
-        asio::io_context io_context;
-
         auto handle(const std::string& name, const std::vector<std::string>& args) -> std::string {
             RespValue request;
             request.type = RespValue::Type::Array;
@@ -35,12 +30,18 @@ namespace {
             }
 
             std::string result;
-            handler.handle(request, io_context.get_executor(), [&](std::string r) -> void {
-                result = std::move(r);
+            handler.handle(request, io_context.get_executor(), [&](std::string response_str) -> void {
+                result = std::move(response_str);
             });
             io_context.run();
             return result;
         }
+
+    private:
+        Store store;
+        BlockingManager blocking_manager;
+        CommandHandler handler{store, blocking_manager};
+        asio::io_context io_context;
     };
 }
 

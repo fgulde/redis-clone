@@ -11,8 +11,8 @@ namespace {
 }
 
 TEST_F(IncrTest, IncrNonExistentKeySetsTo1) {
-    EXPECT_EQ(client.command("INCR", "newkey"), ":1\r\n");
-    EXPECT_EQ(client.command("GET", "newkey"), "$1\r\n1\r\n");
+    EXPECT_EQ(client.command("INCR", "new-key"), ":1\r\n");
+    EXPECT_EQ(client.command("GET", "new-key"), "$1\r\n1\r\n");
 }
 
 TEST_F(IncrTest, IncrExistingKeyIncrementsValue) {

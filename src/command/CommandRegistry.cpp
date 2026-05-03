@@ -12,8 +12,8 @@ void CommandRegistry::register_command(const Command::Type type, std::unique_ptr
 }
 
 auto CommandRegistry::find(const Command::Type type) const -> const ICommand* {
-  if (const auto it = commands_.find(type); it != commands_.end()) {
-    return it->second.get();
+  if (const auto command = commands_.find(type); command != commands_.end()) {
+    return command->second.get();
   }
   return nullptr;
 }

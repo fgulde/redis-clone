@@ -6,9 +6,8 @@
 
 #include "BasicCommands.hpp"
 #include "../../util/CommandUtils.hpp"
-#include "../../util/BasicUtils.hpp"
 
-void PingCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void PingCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                           const std::function<void(std::string)>& on_reply) const {
   // Optional Ping message argument
   if (!cmd.args.empty()) {
@@ -19,7 +18,7 @@ void PingCommand::execute(const Command& cmd, const asio::any_io_executor&,
   }
 }
 
-void EchoCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void EchoCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                           const std::function<void(std::string)>& on_reply) const {
   if (const auto err = command_utils::check_args(cmd, 1)) {
     on_reply(*err);
@@ -29,14 +28,14 @@ void EchoCommand::execute(const Command& cmd, const asio::any_io_executor&,
   on_reply(std::format("${}\r\n{}\r\n", msg.size(), msg));
 }
 
-void SetCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void SetCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                          const std::function<void(std::string)>& on_reply) const {
   if (const auto err = command_utils::check_args(cmd, 2)) {
     on_reply(*err);
     return;
   }
 
-  const auto ttl = basic_utils::parse_expiry(cmd);
+  const auto ttl = command_utils::parse_expiry(cmd);
   if (ttl && ttl->count() <= 0) {
     on_reply("-ERR invalid expire time in 'SET' command\r\n");
     return;
@@ -51,7 +50,7 @@ void SetCommand::execute(const Command& cmd, const asio::any_io_executor&,
   on_reply("+OK\r\n");
 }
 
-void GetCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void GetCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                          const std::function<void(std::string)>& on_reply) const {
   if (const auto err = command_utils::check_args(cmd, 1)) {
     on_reply(*err);
@@ -59,7 +58,7 @@ void GetCommand::execute(const Command& cmd, const asio::any_io_executor&,
   }
   const auto value = store_.get(cmd.args.at(0));
   if (!value) {
-    if (value.error().find("-WRONGTYPE") != std::string::npos) {
+    if (value.error().contains("-WRONGTYPE")) {
       on_reply(value.error());
     } else {
       on_reply("$-1\r\n"); // RESP Null bulk string
@@ -69,7 +68,7 @@ void GetCommand::execute(const Command& cmd, const asio::any_io_executor&,
   }
 }
 
-void TypeCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void TypeCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                           const std::function<void(std::string)>& on_reply) const {
   if (const auto err = command_utils::check_args(cmd, 1)) {
     on_reply(*err);
@@ -82,7 +81,7 @@ void TypeCommand::execute(const Command& cmd, const asio::any_io_executor&,
   on_reply(std::format("+{}\r\n", type.to_string()));
 }
 
-void IncrCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void IncrCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                           const std::function<void(std::string)>& on_reply) const {
   if (const auto err = command_utils::check_args(cmd, 1)) {
     on_reply(*err);

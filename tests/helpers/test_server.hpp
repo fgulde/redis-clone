@@ -17,7 +17,7 @@ public:
     /**
      * @brief Constructs a TestServer, starting it on an ephemeral port and running the IO contexts in background threads.
      */
-    TestServer() : network_ctx_(), store_ctx_(), server_(std::make_unique<Server>(network_ctx_, store_ctx_, 0)), port_(server_->port()) {
+    TestServer() : network_ctx_(), store_ctx_(), server_(std::make_unique<Server>(network_ctx_, 0, store_ctx_)), port_(server_->port()) {
         server_->run();
 
 
@@ -66,6 +66,9 @@ private:
 };
 
 class RedisIntegrationTest : public ::testing::Test {
+public:
+    [[nodiscard]] auto server() const -> TestServer& { return *server_; }
+
 protected:
     void SetUp() override {
         server_ = std::make_unique<TestServer>();
@@ -73,5 +76,7 @@ protected:
     void TearDown() override {
         server_.reset();
     }
+
+private:
     std::unique_ptr<TestServer> server_;
 };

@@ -40,9 +40,9 @@ struct Command {
 
   /// Parses the command type from the command name, case-insensitively.
   static auto parse_type(const std::string_view name) -> Type {
-    auto compareStrings = [](std::string_view a, std::string_view b) -> bool {
-      return std::ranges::equal(a, b, [](const char c1, const char c2) -> bool {
-        return std::tolower(static_cast<unsigned char>(c1)) == std::tolower(static_cast<unsigned char>(c2));
+    auto compareStrings = [](std::string_view string1, std::string_view string2) -> bool {
+      return std::ranges::equal(string1, string2, [](const char character1, const char character2) -> bool {
+        return std::tolower(static_cast<unsigned char>(character1)) == std::tolower(static_cast<unsigned char>(character2));
       });
     };
 

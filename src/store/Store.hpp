@@ -29,7 +29,7 @@ public:
   void set(std::string_view key, std::string value, std::chrono::milliseconds ttl);
 
   /**
-   * @brief Returns the value for a key, or an error if not found or expired.
+   * @brief Returns the value for a key or an error if not found or expired.
    * @param key The key to retrieve.
    * @return The value associated with the key, or an error if the key does not exist, has expired or is of the wrong type.
    * @note Expired entries are lazily deleted on access.
@@ -88,20 +88,19 @@ public:
   /**
    * @brief Appends an entry to a stream.
    * @param key The key of the stream.
-   * @param id The ID of the entry.
+   * @param stream_id The ID of the entry.
    * @param fields Key-value pairs of the entry.
    * @return The ID of the added entry, or an error message.
    */
-  auto xadd(std::string_view key, std::string_view id, const std::vector<std::pair<std::string, std::string>>& fields) -> std::expected<std::string, std::string>;
+  auto xadd(std::string_view key, StreamId stream_id, const std::vector<std::pair<std::string, std::string>>& fields) -> std::expected<std::string, std::string>;
 
   /**
    * @brief Returns a range of entries from a stream.
    * @param key The key of the stream.
-   * @param start_id The start ID.
-   * @param end_id The end ID.
+   * @param range The range of entries to retrieve, specified by start and end IDs.
    * @return The range of stream entries.
    */
-  auto xrange(std::string_view key, std::string_view start_id, std::string_view end_id) const -> std::vector<StreamEntry>;
+  auto xrange(std::string_view key, const StreamRange &range) const -> std::vector<StreamEntry>;
 
   /**
    * @brief Reads from multiple streams, returning entries with IDs strictly greater than the requested ID.
@@ -115,7 +114,7 @@ public:
    * @brief Increments the integer value of a key by one.
    * If the key does not exist, it is set to 0 before performing the operation.
    * @param key The key to increment.
-   * @return The value of key after the increment, or an error message.
+   * @return The value of the key after the increment, or an error message.
    */
   auto incr(std::string_view key) -> std::expected<long long, std::string>;
 

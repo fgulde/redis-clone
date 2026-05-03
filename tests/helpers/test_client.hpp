@@ -80,50 +80,65 @@ private:
         }
     }
 
+    /**
+     * Reads a complete RESP2 response from the socket and appends it to the response string.
+     * Handles simple strings, errors, integers, bulk strings, and arrays according to the RESP2 specification.
+     * @param response The string to append the response to.
+     */
     auto read_resp(std::string& response) -> void {
-        char first_byte;
-        asio::read(socket_, asio::buffer(&first_byte, 1));
-        response += first_byte;
+        std::vector counts = { 1 };
+        while (!counts.empty()) {
+            if (counts.back() == 0) {
+                counts.pop_back();
+                continue;
+            }
+            counts.back()--;
 
-        if (first_byte == '+' || first_byte == '-' || first_byte == ':') {
-            // Read until CRLF
-            char c, prev = '\0';
-            while (true) {
-                asio::read(socket_, asio::buffer(&c, 1));
-                response += c;
-                if (prev == '\r' && c == '\n') { break; }
-                prev = c;
-            }
-        } else if (first_byte == '$') {
-            // Read bulk string length
-            std::string len_str;
-            char c, prev = '\0';
-            while (true) {
-                asio::read(socket_, asio::buffer(&c, 1));
-                response += c;
-                if (prev == '\r' && c == '\n') break;
-                if (c != '\r' && c != '\n') len_str += c;
-                prev = c;
-            }
-            if (const int len = std::stoi(len_str); len != -1) {
-                std::string data(len + 2, '\0'); // +2 for trailing CRLF
-                asio::read(socket_, asio::buffer(data));
-                response += data;
-            }
-        } else if (first_byte == '*') {
-            // Read array length
-            std::string len_str;
-            char c, prev = '\0';
-            while (true) {
-                asio::read(socket_, asio::buffer(&c, 1));
-                response += c;
-                if (prev == '\r' && c == '\n') break;
-                if (c != '\r' && c != '\n') len_str += c;
-                prev = c;
-            }
-            if (const int len = std::stoi(len_str); len != -1) {
-                for (int i = 0; i < len; ++i) {
-                    read_resp(response);
+            char first_byte{ 0 };
+            asio::read(socket_, asio::buffer(&first_byte, 1));
+            response += first_byte;
+
+            if (first_byte == '+' || first_byte == '-' || first_byte == ':') {
+                // Read until CRLF
+                char currentChar{ '\0' };
+                char prevChar{ '\0' };
+                while (true) {
+                    asio::read(socket_, asio::buffer(&currentChar, 1));
+                    response += currentChar;
+                    if (prevChar == '\r' && currentChar == '\n') { break; }
+                    prevChar = currentChar;
+                }
+            } else if (first_byte == '$') {
+                // Read bulk string length
+                std::string len_str;
+                char currentChar{ '\0' };
+                char prevChar{ '\0' };
+                while (true) {
+                    asio::read(socket_, asio::buffer(&currentChar, 1));
+                    response += currentChar;
+                    if (prevChar == '\r' && currentChar == '\n') { break; }
+                    if (currentChar != '\r' && currentChar != '\n') { len_str += currentChar; }
+                    prevChar = currentChar;
+                }
+                if (const int len = std::stoi(len_str); len != -1) {
+                    std::string data(len + 2, '\0'); // +2 for trailing CRLF
+                    asio::read(socket_, asio::buffer(data));
+                    response += data;
+                }
+            } else if (first_byte == '*') {
+                // Read array length
+                std::string len_str;
+                char currentChar{ '\0' };
+                char prevChar{ '\0' };
+                while (true) {
+                    asio::read(socket_, asio::buffer(&currentChar, 1));
+                    response += currentChar;
+                    if (prevChar == '\r' && currentChar == '\n') { break; }
+                    if (currentChar != '\r' && currentChar != '\n') { len_str += currentChar; }
+                    prevChar = currentChar;
+                }
+                if (const int len = std::stoi(len_str); len > 0) {
+                    counts.push_back(len);
                 }
             }
         }
@@ -140,7 +155,6 @@ private:
         return res;
     }
 
-private:
     // Own io_context since socket needs it, but we run synchronously so io_context.run() is never called.
     asio::io_context io_context_;
 

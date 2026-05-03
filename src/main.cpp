@@ -11,7 +11,7 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
   std::cout << std::unitbuf;
   std::cerr << std::unitbuf;
 
-  constexpr int default_port = 6379;
+  constexpr int default_port{ 6379 };
   int port { default_port };
 
   // Check environment variable first (e.g., for test configuration), then command-line arguments
@@ -43,7 +43,7 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
   asio::io_context network_ctx;
   asio::io_context store_ctx;
 
-  Server server(network_ctx, store_ctx, port);
+  Server server(network_ctx, port, store_ctx);
 
   server.run();
 
@@ -57,7 +57,7 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
   });
 
   // Start a pool of I/O threads
-  constexpr int num_io_threads = 4; // Adjust as needed
+  constexpr int num_io_threads{ 4 }; // Adjust as needed
   std::vector<std::jthread> io_threads;
   for (int i = 0; i < num_io_threads; ++i) {
     io_threads.emplace_back([&]() -> void {

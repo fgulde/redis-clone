@@ -6,7 +6,7 @@
 #include "../net/Connection.hpp"
 #include "../util/Logger.hpp"
 
-Server::Server(asio::io_context &network_ctx, asio::io_context &store_ctx, const unsigned short port)
+Server::Server(asio::io_context &network_ctx, const unsigned short port, asio::io_context &store_ctx)
   : network_ctx_(network_ctx)
   , store_ctx_(store_ctx)
   , acceptor_(network_ctx, tcp::endpoint(tcp::v4(), port)) {}
@@ -18,7 +18,7 @@ void Server::run() {
 // Accept "loop"
 void Server::do_accept() {
   acceptor_.async_accept(
-    [this](const asio::error_code error, tcp::socket socket) {
+    [this](const asio::error_code error, tcp::socket socket) -> void {
       if (!error) {
         Logger::log("Client connected");
         std::make_shared<Connection>(std::move(socket), store_, blocking_manager_, store_ctx_)->start();

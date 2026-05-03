@@ -50,7 +50,7 @@ private:
 };
 
 /**
- * @brief Command to determine the type stored at key.
+ * @brief Command to determine the type stored at a key.
  */
 class TypeCommand : public ICommand {
 public:

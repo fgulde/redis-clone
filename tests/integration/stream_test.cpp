@@ -38,7 +38,7 @@ TEST_F(StreamTest, XAddAutoId) {
     EXPECT_TRUE(resp.starts_with("$"));
     EXPECT_TRUE(resp.ends_with("\r\n"));
     // It should be > 0-0 so there should be a '-'
-    EXPECT_NE(resp.find("-"), std::string::npos);
+    EXPECT_NE(resp.find('-'), std::string::npos);
 }
 
 TEST_F(StreamTest, XAddInvalidIdSmaller) {
@@ -108,17 +108,18 @@ TEST_F(StreamTest, XReadBlockWithTimeout) {
 TEST_F(StreamTest, XReadBlockWakeUp) {
   std::atomic thread_done = false;
 
-  std::jthread t([&thread_done, this]() -> void {
+  std::jthread thread([&thread_done, this]() -> void {
     TestClient blocking_client{server.port()};
     const std::string resp = blocking_client.command("xread", "BLOCK", "1000", "STREAMS", "k3", "0-0");
     EXPECT_EQ(resp, "*1\r\n*2\r\n$2\r\nk3\r\n*1\r\n*2\r\n$3\r\n0-1\r\n*2\r\n$4\r\ntemp\r\n$2\r\n38\r\n");
     thread_done = true;
   });
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  constexpr short wait_ms{ 50 };
+  std::this_thread::sleep_for(std::chrono::milliseconds(wait_ms));
   client.command("xadd", "k3", "0-1", std::vector<std::string_view>{"temp", "38"});
 
-  t.join();
+  thread.join();
   EXPECT_TRUE(thread_done);
 }
 
@@ -126,16 +127,17 @@ TEST_F(StreamTest, XReadBlockDollar) {
   client.command("xadd", "k4", "0-1", std::vector<std::string_view>{"temp", "1"});
 
   std::atomic thread_done = false;
-  std::jthread t([&thread_done, this]() -> void {
+  std::jthread thread([&thread_done, this]() -> void {
     TestClient blocking_client{server.port()};
     const std::string resp = blocking_client.command("xread", "BLOCK", "1000", "STREAMS", "k4", "$");
     EXPECT_EQ(resp, "*1\r\n*2\r\n$2\r\nk4\r\n*1\r\n*2\r\n$3\r\n0-2\r\n*2\r\n$4\r\ntemp\r\n$1\r\n2\r\n");
     thread_done = true;
   });
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  constexpr short wait_ms{ 50 };
+  std::this_thread::sleep_for(std::chrono::milliseconds(wait_ms));
   client.command("xadd", "k4", "0-2", std::vector<std::string_view>{"temp", "2"});
 
-  t.join();
+  thread.join();
   EXPECT_TRUE(thread_done);
 }

@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 #include <string>
+#include <array>
 #include <vector>
 #include <string_view>
 #include "../helpers/test_server.hpp"
@@ -48,12 +49,12 @@ namespace {
 }
 
 TEST_F(ListTest, RpushSingleElementReturnsLength) {
-    std::vector<std::string_view> elements{"a"};
+    constexpr std::array<std::string_view, 1> elements{"a"};
     EXPECT_EQ(client.command("rpush", "mylist", elements), ":1\r\n");
 }
 
 TEST_F(ListTest, RpushMultipleElementsReturnsLength) {
-    std::vector<std::string_view> elements{"a", "b", "c"};
+    constexpr std::array<std::string_view, 3> elements{"a", "b", "c"};
     EXPECT_EQ(client.command("rpush", "mylist", elements), ":3\r\n");
     const auto array = parse_array(client.command("lrange", "mylist", 0, -1));
     const std::vector<std::string> expected{"a", "b", "c"};
@@ -61,9 +62,9 @@ TEST_F(ListTest, RpushMultipleElementsReturnsLength) {
 }
 
 TEST_F(ListTest, LpushSingleElementPrependsToList) {
-    std::vector<std::string_view> r_elements{"b", "c"};
+    constexpr std::array<std::string_view, 2> r_elements{"b", "c"};
     EXPECT_EQ(client.command("rpush", "mylist", r_elements), ":2\r\n");
-    std::vector<std::string_view> l_elements{"a"};
+    constexpr std::array<std::string_view, 1> l_elements{"a"};
     EXPECT_EQ(client.command("lpush", "mylist", l_elements), ":3\r\n");
     const auto array = parse_array(client.command("lrange", "mylist", 0, -1));
     const std::vector<std::string> expected{"a", "b", "c"};
@@ -71,7 +72,7 @@ TEST_F(ListTest, LpushSingleElementPrependsToList) {
 }
 
 TEST_F(ListTest, LpushMultipleElementsPrependsInReverseOrder) {
-    std::vector<std::string_view> elements{"a", "b", "c"};
+    constexpr std::array<std::string_view, 3> elements{"a", "b", "c"};
     EXPECT_EQ(client.command("lpush", "mylist", elements), ":3\r\n");
     const auto array = parse_array(client.command("lrange", "mylist", 0, -1));
     const std::vector<std::string> expected{"c", "b", "a"};
@@ -79,7 +80,7 @@ TEST_F(ListTest, LpushMultipleElementsPrependsInReverseOrder) {
 }
 
 TEST_F(ListTest, LrangeNormalIndices) {
-    std::vector<std::string_view> elements{"a", "b", "c", "d"};
+    constexpr std::array<std::string_view, 4> elements{"a", "b", "c", "d"};
     client.command("rpush", "mylist", elements);
     const auto array = parse_array(client.command("lrange", "mylist", 1, 2));
     const std::vector<std::string> expected{"b", "c"};
@@ -87,7 +88,7 @@ TEST_F(ListTest, LrangeNormalIndices) {
 }
 
 TEST_F(ListTest, LrangeNegativeIndices) {
-    std::vector<std::string_view> elements{"a", "b", "c", "d"};
+    constexpr std::array<std::string_view, 4> elements{"a", "b", "c", "d"};
     client.command("rpush", "mylist", elements);
     const auto array = parse_array(client.command("lrange", "mylist", -2, -1));
     const std::vector<std::string> expected{"c", "d"};
@@ -95,13 +96,13 @@ TEST_F(ListTest, LrangeNegativeIndices) {
 }
 
 TEST_F(ListTest, LrangeOutOfBoundsReturnsEmptyArray) {
-    std::vector<std::string_view> elements{"a"};
+    constexpr std::array<std::string_view, 1> elements{"a"};
     client.command("rpush", "mylist", elements);
     EXPECT_EQ(client.command("lrange", "mylist", 5, 10), "*0\r\n");
 }
 
 TEST_F(ListTest, LlenReturnsCorrectLength) {
-    std::vector<std::string_view> elements{"a", "b", "c"};
+    constexpr std::array<std::string_view, 3> elements{"a", "b", "c"};
     client.command("rpush", "mylist", elements);
     EXPECT_EQ(client.command("llen", "mylist"), ":3\r\n");
 }
@@ -111,14 +112,14 @@ TEST_F(ListTest, LlenOnMissingKeyReturnsZero) {
 }
 
 TEST_F(ListTest, LpopRemovesAndReturnsHead) {
-    std::vector<std::string_view> elements{"a", "b", "c"};
+    constexpr std::array<std::string_view, 3> elements{"a", "b", "c"};
     client.command("rpush", "mylist", elements);
     EXPECT_EQ(client.command("lpop", "mylist"), "$1\r\na\r\n");
     EXPECT_EQ(client.command("llen", "mylist"), ":2\r\n");
 }
 
 TEST_F(ListTest, LpopWithCountReturnsMultipleElements) {
-    std::vector<std::string_view> elements{"a", "b", "c", "d"};
+    constexpr std::array<std::string_view, 4> elements{"a", "b", "c", "d"};
     client.command("rpush", "mylist", elements);
     const auto array = parse_array(client.command("lpop", "mylist", 2));
     const std::vector<std::string> expected{"a", "b"};

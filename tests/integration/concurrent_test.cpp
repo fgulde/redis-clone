@@ -40,8 +40,8 @@ TEST(ConcurrentTest, ConcurrentPingsAllReturnPong) {
     // jthreads join automatically when threads go out of scope
     threads.clear();
 
-    for (bool const ok : results) {
-        EXPECT_TRUE(ok);
+    for (bool const clientResult : results) {
+        EXPECT_TRUE(clientResult);
     }
 }
 
@@ -66,7 +66,8 @@ TEST(ConcurrentTest, ConcurrentSetGetDoNotCrossTalk) {
 
             client.command("set", key, val);
             const std::string expected = std::format("${}\r\n{}\r\n", val.size(), val);
-            for (int j = 0; j < 20; ++j) {
+            constexpr std::size_t kGetsPerClient{ 20 };
+            for (std::size_t j = 0; j < kGetsPerClient; ++j) {
                 if (client.command("get", key) != expected) {
                     results.at(i) = false;
                 }
@@ -76,7 +77,7 @@ TEST(ConcurrentTest, ConcurrentSetGetDoNotCrossTalk) {
 
     threads.clear();
 
-    for (bool const ok : results) {
-        EXPECT_TRUE(ok);
+    for (bool const clientResult : results) {
+        EXPECT_TRUE(clientResult);
     }
 }
