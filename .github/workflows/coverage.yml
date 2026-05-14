@@ -45,7 +45,8 @@ jobs:
             --xml-pretty \
             -o coverage.xml \
             --exclude "tests/.*" \
-            --exclude "vcpkg_installed/.*"
+            --exclude "vcpkg_installed/.*" \
+            --gcov-ignore-parse-errors=negative_hits.warn
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
