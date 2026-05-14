@@ -145,6 +145,9 @@ if(ENABLE_COVERAGE)
     target_compile_options(redis_lib PRIVATE --coverage -O0 -g)
     target_link_options(redis_lib PRIVATE --coverage)
 
+    target_compile_options(redis PRIVATE --coverage -O0 -g)
+    target_link_options(redis PRIVATE --coverage)
+
     target_compile_options(redis_tests PRIVATE --coverage -O0 -g)
     target_link_options(redis_tests PRIVATE --coverage)
 endif()
