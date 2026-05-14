@@ -1,0 +1,56 @@
+name: Code Coverage
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      VCPKG_ROOT: /usr/local/share/vcpkg
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install gcovr
+        run: sudo apt-get update && sudo apt-get install -y gcovr
+
+      - name: Setup vcpkg
+        run: |
+          # VCPKG is pre-installed on GitHub Actions ubuntu-latest but needs bootstrapping if missing
+          # Usually it works out of the box with CMAKE_TOOLCHAIN_FILE
+          echo "Vcpkg path: $VCPKG_ROOT"
+
+      - name: Configure CMake
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=Debug
+          -DENABLE_COVERAGE=ON
+          -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+
+      - name: Build
+        run: cmake --build build --config Debug
+
+      - name: Run Tests
+        working-directory: ${{github.workspace}}/build
+        run: ctest -C Debug --output-on-failure
+
+      - name: Generate Code Coverage Report (XML for Codecov)
+        run: |
+          gcovr -r . \
+            --xml-pretty \
+            -o coverage.xml \
+            --exclude "tests/.*" \
+            --exclude "vcpkg_installed/.*"
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
