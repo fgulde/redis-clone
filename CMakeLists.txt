@@ -133,3 +133,18 @@ target_link_libraries(redis_tests PRIVATE
 
 # Register the testing binary with CTest
 add_test(NAME redis_tests COMMAND redis_tests)
+
+# ==============================================================================
+# 6. CODE COVERAGE
+# ==============================================================================
+option(ENABLE_COVERAGE "Enable Code Coverage reporting" OFF)
+
+if(ENABLE_COVERAGE)
+    message(STATUS "Code coverage is enabled")
+    # Add coverage flags to the targets we want to measure
+    target_compile_options(redis_lib PRIVATE --coverage -O0 -g)
+    target_link_options(redis_lib PRIVATE --coverage)
+
+    target_compile_options(redis_tests PRIVATE --coverage -O0 -g)
+    target_link_options(redis_tests PRIVATE --coverage)
+endif()

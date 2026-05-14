@@ -1,6 +1,7 @@
 # Redis-Clone in C++
 
 ![CI](https://github.com/fgulde/redis-clone/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/fgulde/redis-clone/graph/badge.svg)](https://codecov.io/gh/fgulde/redis-clone)
 
 A Redis-compatible server implementation built from scratch in **C++23**.
 
