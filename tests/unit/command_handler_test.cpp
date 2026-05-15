@@ -40,7 +40,8 @@ namespace {
     private:
         Store store;
         BlockingManager blocking_manager;
-        CommandHandler handler{store, blocking_manager};
+        WatchManager watch_manager;
+        CommandHandler handler{store, blocking_manager, watch_manager};
         asio::io_context io_context;
     };
 }

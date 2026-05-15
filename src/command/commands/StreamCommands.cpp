@@ -189,6 +189,7 @@ void XAddCommand::execute(const Command& cmd, const asio::any_io_executor& /*exe
   }
 
   if (const auto result = store_.xadd(key, StreamId{streamId}, fields)) {
+    watch_manager_.notify_write(key);
     blocking_manager_.serve_xread_waiters(key);
     on_reply(std::format("${}\r\n{}\r\n", result->size(), *result));
   } else {

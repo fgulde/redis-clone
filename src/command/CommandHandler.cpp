@@ -6,8 +6,9 @@
 #include <vector>
 #include <functional>
 
-CommandHandler::CommandHandler(Store &store, BlockingManager &blocking_manager) 
-    : registry_(build_registry(store, blocking_manager, tm_,
+CommandHandler::CommandHandler(Store &store, BlockingManager &blocking_manager, WatchManager &watch_manager)
+    : tm_(watch_manager)
+    , registry_(build_registry(store, blocking_manager, watch_manager, tm_,
       [this](const Command::Type command_type) -> const ICommand * { return registry_.find(command_type); }))
     , dispatcher_(registry_, tm_) {}
 

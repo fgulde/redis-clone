@@ -32,6 +32,7 @@ struct Command {
     XRead,
     Incr,
     Multi,
+    Watch,
     Exec,
     Discard,
     Unknown
@@ -65,6 +66,7 @@ struct Command {
     if (compareStrings(name, "xread")) { return Type::XRead; }
     if (compareStrings(name, "incr")) { return Type::Incr; }
     if (compareStrings(name, "multi")) { return Type::Multi; }
+    if (compareStrings(name, "watch")) { return Type::Watch; }
     if (compareStrings(name, "exec")) { return Type::Exec; }
     if (compareStrings(name, "discard")) { return Type::Discard; }
     return Type::Unknown;

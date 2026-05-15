@@ -24,7 +24,12 @@ void ExecCommand::execute(const Command& /*cmd*/, const asio::any_io_executor& e
         return;
     }
 
-    // Pop the queued commands and reset the transaction manager for the next transaction.
+    if (tm_.is_dirty()) {
+        tm_.reset();
+        on_reply("*-1\r\n");
+        return;
+    }
+
     auto queued = tm_.pop_queued_commands();
     tm_.reset();
 

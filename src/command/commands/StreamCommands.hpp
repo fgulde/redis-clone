@@ -7,6 +7,7 @@
 #include "../ICommand.hpp"
 #include "../../store/Store.hpp"
 #include "../../store/BlockingManager.hpp"
+#include "../WatchManager.hpp"
 #include "../../util/CommandUtils.hpp"
 
 /**
@@ -14,13 +15,14 @@
  */
 class XAddCommand : public ICommand {
 public:
-  explicit XAddCommand(Store& store, BlockingManager& blocking_manager)
-      : store_(store), blocking_manager_(blocking_manager) {}
+  explicit XAddCommand(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager)
+      : store_(store), blocking_manager_(blocking_manager), watch_manager_(watch_manager) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
   Store& store_; ///< Target data store
   BlockingManager& blocking_manager_; ///< Blocking manager to handle stream blocking
+  WatchManager& watch_manager_;
 };
 
 /**

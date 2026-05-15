@@ -21,7 +21,7 @@ void Server::do_accept() {
     [this](const asio::error_code error, tcp::socket socket) -> void {
       if (!error) {
         Logger::log("Client connected");
-        std::make_shared<Connection>(std::move(socket), store_, blocking_manager_, store_ctx_)->start();
+        std::make_shared<Connection>(std::move(socket), store_, blocking_manager_, watch_manager_, store_ctx_)->start();
       } else {
         Logger::log("Accept error: {}", error.message());
       }

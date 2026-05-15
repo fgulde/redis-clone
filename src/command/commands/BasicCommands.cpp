@@ -47,6 +47,8 @@ void SetCommand::execute(const Command& cmd, const asio::any_io_executor& /*exec
     store_.set(cmd.args.at(0), cmd.args.at(1));
   }
 
+  watch_manager_.notify_write(cmd.args.at(0));
+
   on_reply("+OK\r\n");
 }
 
@@ -91,6 +93,7 @@ void IncrCommand::execute(const Command& cmd, const asio::any_io_executor& /*exe
   const std::string& key = cmd.args.at(0);
 
   if (const auto result = store_.incr(key)) {
+    watch_manager_.notify_write(key);
     on_reply(std::format(":{}\r\n", *result));
   } else {
     on_reply(result.error());

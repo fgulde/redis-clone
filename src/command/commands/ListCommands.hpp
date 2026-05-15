@@ -7,19 +7,21 @@
 #include "../ICommand.hpp"
 #include "../../store/Store.hpp"
 #include "../../store/BlockingManager.hpp"
+#include "../WatchManager.hpp"
 
 /**
  * @brief Command to append one or multiple elements to a list.
  */
 class RPushCommand : public ICommand {
 public:
-  explicit RPushCommand(Store& store, BlockingManager& blocking_manager)
-      : store_(store), blocking_manager_(blocking_manager) {}
+  explicit RPushCommand(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager)
+      : store_(store), blocking_manager_(blocking_manager), watch_manager_(watch_manager) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
   Store& store_; ///< Target data store
   BlockingManager& blocking_manager_; ///< Blocking manager for resolving BLPOP blocked clients
+  WatchManager& watch_manager_;
 };
 
 /**
@@ -27,13 +29,14 @@ private:
  */
 class LPushCommand : public ICommand {
 public:
-  explicit LPushCommand(Store& store, BlockingManager& blocking_manager)
-      : store_(store), blocking_manager_(blocking_manager) {}
+  explicit LPushCommand(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager)
+      : store_(store), blocking_manager_(blocking_manager), watch_manager_(watch_manager) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
   Store& store_; ///< Target data store
   BlockingManager& blocking_manager_; ///< Blocking manager for resolving BLPOP blocked clients
+  WatchManager& watch_manager_;
 };
 
 /**
@@ -65,11 +68,13 @@ private:
  */
 class LPopCommand : public ICommand {
 public:
-  explicit LPopCommand(Store& store) : store_(store) {}
+  explicit LPopCommand(Store& store, WatchManager& watch_manager)
+      : store_(store), watch_manager_(watch_manager) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
   Store& store_; ///< Target data store
+  WatchManager& watch_manager_;
 };
 
 /**

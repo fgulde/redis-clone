@@ -9,12 +9,13 @@
 
 using namespace std::string_view_literals;
 
-Connection::Connection(tcp::socket socket, Store &store, BlockingManager &blocking_manager, asio::io_context& store_ctx)
+Connection::Connection(tcp::socket socket, Store &store, BlockingManager &blocking_manager, WatchManager &watch_manager, asio::io_context& store_ctx)
   : socket_(std::move(socket))
   , store_(store)
   , blocking_manager_(blocking_manager)
+  , watch_manager_(watch_manager)
   , store_ctx_(store_ctx)
-  , handler_(store, blocking_manager) {}
+  , handler_(store, blocking_manager, watch_manager) {}
 
 void Connection::start() {
   do_read();

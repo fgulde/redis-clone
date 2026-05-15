@@ -3,6 +3,14 @@
 //
 
 #include "TransactionManager.hpp"
+#include "WatchManager.hpp"
+
+TransactionManager::~TransactionManager() {
+    clear_watches();
+}
+
+TransactionManager::TransactionManager(WatchManager& watch_manager)
+    : watch_manager_(&watch_manager) {}
 
 void TransactionManager::begin() {
     in_transaction_ = true;
@@ -10,8 +18,45 @@ void TransactionManager::begin() {
 }
 
 void TransactionManager::reset() {
-    in_transaction_ = false;
+    clear_watches();
+    finish_transaction();
     queued_commands_.clear();
+}
+
+void TransactionManager::clear_watches() {
+    if (watch_manager_ == nullptr) {
+        watched_keys_.clear();
+        return;
+    }
+
+    for (const auto& [key, watch_id] : watched_keys_) {
+        (void)key;
+        watch_manager_->unwatch(watch_id);
+    }
+    watched_keys_.clear();
+}
+
+void TransactionManager::mark_dirty() {
+    dirty_ = true;
+}
+
+bool TransactionManager::is_dirty() const {
+    return dirty_;
+}
+
+auto TransactionManager::watch_key(const std::string& key) -> bool {
+    return watched_keys_.emplace(key, 0).second;
+}
+
+void TransactionManager::associate_watch_id(const std::string& key, const uint64_t watch_id) {
+    if (const auto it = watched_keys_.find(key); it != watched_keys_.end()) {
+        it->second = watch_id;
+    }
+}
+
+void TransactionManager::finish_transaction() {
+    in_transaction_ = false;
+    dirty_ = false;
 }
 
 void TransactionManager::queue_command(const RespValue &request) {

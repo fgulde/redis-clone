@@ -11,6 +11,7 @@
 #include "TransactionDispatcher.hpp"
 #include "../store/Store.hpp"
 #include "../store/BlockingManager.hpp"
+#include "WatchManager.hpp"
 #include "TransactionManager.hpp"
 
 /**
@@ -19,7 +20,7 @@
  */
 class CommandHandler {
 public:
-  explicit CommandHandler(Store& store, BlockingManager& blocking_manager);
+  explicit CommandHandler(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager);
 
   /**
    * @brief Handles a RESP request and produces a response string via an async callback.
@@ -41,7 +42,7 @@ public:
   static auto parse_command(const RespValue& request) -> Command;
 
 private:
-  CommandRegistry registry_;
   TransactionManager tm_;
+  CommandRegistry registry_;
   TransactionDispatcher dispatcher_;
 };

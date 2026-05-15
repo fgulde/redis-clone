@@ -5,6 +5,7 @@
 #pragma once
 
 #include "../ICommand.hpp"
+#include "../WatchManager.hpp"
 #include "../../store/Store.hpp"
 
 /**
@@ -30,11 +31,13 @@ public:
  */
 class SetCommand : public ICommand {
 public:
-  explicit SetCommand(Store& store) : store_(store) {}
+  explicit SetCommand(Store& store, WatchManager& watch_manager)
+      : store_(store), watch_manager_(watch_manager) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
   Store& store_; ///< Target data store
+  WatchManager& watch_manager_; ///< Watch manager to notify on key updates for transaction invalidation
 };
 
 /**
@@ -66,9 +69,11 @@ private:
  */
 class IncrCommand : public ICommand {
 public:
-  explicit IncrCommand(Store& store) : store_(store) {}
+  explicit IncrCommand(Store& store, WatchManager& watch_manager)
+      : store_(store), watch_manager_(watch_manager) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
   Store& store_; ///< Target data store
+  WatchManager& watch_manager_; ///< Watch manager to notify on key updates for transaction invalidation
 };

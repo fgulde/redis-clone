@@ -36,10 +36,14 @@ add_library(redis_lib STATIC
         src/command/commands/ListCommands.hpp
         src/command/commands/StreamCommands.cpp
         src/command/commands/StreamCommands.hpp
+        src/command/commands/WatchCommands.cpp
+        src/command/commands/WatchCommands.hpp
         src/command/commands/TransactionCommands.cpp
         src/command/commands/TransactionCommands.hpp
         src/command/TransactionManager.cpp
         src/command/TransactionManager.hpp
+        src/command/WatchManager.cpp
+        src/command/WatchManager.hpp
         src/net/Connection.cpp
         src/net/Connection.hpp
         src/net/Server.cpp

@@ -18,6 +18,7 @@ void RPushCommand::execute(const Command& cmd, const asio::any_io_executor& /*ex
   const std::vector values(cmd.args.begin() + 1, cmd.args.end());
 
   const std::size_t length = store_.rpush(key, values);
+  watch_manager_.notify_write(key);
   blocking_manager_.serve_blpop_waiters(key, store_);
   on_reply(std::format(":{}\r\n", length));
 }
@@ -33,6 +34,7 @@ void LPushCommand::execute(const Command& cmd, const asio::any_io_executor& /*ex
   const std::vector values(cmd.args.begin() + 1, cmd.args.end());
 
   const std::size_t length = store_.lpush(key, values);
+  watch_manager_.notify_write(key);
   blocking_manager_.serve_blpop_waiters(key, store_);
   on_reply(std::format(":{}\r\n", length));
 }
@@ -89,6 +91,8 @@ void LPopCommand::execute(const Command& cmd, const asio::any_io_executor& /*exe
     }
     return;
   }
+
+  watch_manager_.notify_write(key);
 
   // If count was not explicitly given, return a single bulk string instead of an array
   if (cmd.args.size() < 2) {
