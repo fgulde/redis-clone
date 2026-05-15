@@ -32,7 +32,7 @@ Already implemented:
 - List commands (`RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`, `BLPOP`)
 - Stream commands (`XADD`, `XRANGE`, `XREAD` incl. `BLOCK` support)
 - Auto-generated IDs (`*`, `ms-*`) for `XADD`, infinite bounds (`-`, `+`) for `XRANGE`, and `$` ID for `XREAD`
-- Transactions (`MULTI`, `EXEC`)
+- Transactions (`MULTI`, `EXEC`, `DISCARD`)
 - Lazy deletion of expired keys on access
 - Multithreaded architecture (multi-reactor pattern): thread pool (`network_ctx`) handles async I/O, separated from a single-threaded lock-free store execution loop (`store_ctx`)
 - Modular architecture (networking, RESP parsing, command handling, storage/sub-stores)

@@ -36,3 +36,15 @@ private:
     TransactionManager& tm_;
     CommandFinder finder_;
 };
+
+/**
+ * @brief Command to abort a transaction.
+ */
+class DiscardCommand : public ICommand {
+public:
+    explicit DiscardCommand(TransactionManager& tm) : tm_(tm) {}
+    void execute(const Command& cmd, const asio::any_io_executor& executor,
+                 const std::function<void(std::string)>& on_reply) const override;
+private:
+    TransactionManager& tm_;
+};

@@ -47,6 +47,7 @@ auto build_registry(Store& store, BlockingManager& blocking_manager, Transaction
   // Transaction Commands
   registry.register_command(Command::Type::Multi, std::make_unique<MultiCommand>(transaction_manager));
   registry.register_command(Command::Type::Exec, std::make_unique<ExecCommand>(transaction_manager, std::move(finder)));
+  registry.register_command(Command::Type::Discard, std::make_unique<DiscardCommand>(transaction_manager));
 
   return registry;
 }

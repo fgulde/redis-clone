@@ -43,3 +43,16 @@ TEST_F(TransactionTest, TransactionWithMultipleGetSet) {
     std::string response = client.command("EXEC");
     EXPECT_EQ(response, "*4\r\n+OK\r\n+OK\r\n$1\r\n1\r\n$1\r\n2\r\n");
 }
+
+TEST_F(TransactionTest, DiscardAbortsTransaction) {
+    EXPECT_EQ(client.command("MULTI"), "+OK\r\n");
+    EXPECT_EQ(client.command("SET", "foo", "41"), "+QUEUED\r\n");
+    EXPECT_EQ(client.command("DISCARD"), "+OK\r\n");
+
+    // We should be out of "MULTI" mode now
+    EXPECT_EQ(client.command("GET", "foo"), "$-1\r\n");
+}
+
+TEST_F(TransactionTest, DiscardWithoutMultiReturnsError) {
+    EXPECT_EQ(client.command("DISCARD"), "-ERR DISCARD without MULTI\r\n");
+}

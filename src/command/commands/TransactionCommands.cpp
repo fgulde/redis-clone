@@ -76,3 +76,13 @@ void ExecCommand::execute(const Command& /*cmd*/, const asio::any_io_executor& e
 
     (*run_next)();
 }
+
+void DiscardCommand::execute(const Command& /*cmd*/, const asio::any_io_executor& /*executor*/,
+                             const std::function<void(std::string)>& on_reply) const {
+    if (!tm_.is_active()) {
+        on_reply("-ERR DISCARD without MULTI\r\n");
+        return;
+    }
+    tm_.reset();
+    on_reply("+OK\r\n");
+}
