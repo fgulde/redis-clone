@@ -103,6 +103,9 @@ target_link_libraries(redis PRIVATE redis_lib)
 # ==============================================================================
 add_executable(redis_tests
         tests/main_test.cpp
+        tests/unit/logger_test.cpp
+        tests/unit/command_test.cpp
+        tests/unit/command_utils_test.cpp
         tests/unit/resp_parser_test.cpp
         tests/unit/store_test.cpp
         tests/unit/command_handler_test.cpp

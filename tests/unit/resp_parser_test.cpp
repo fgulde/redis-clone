@@ -67,3 +67,45 @@ TEST(RespParserTest, MalformedInputThrowsOrReturnsError) {
     const auto result = parser.parse("garbage\r\n");
     EXPECT_FALSE(result.has_value());
 }
+TEST(RespParserTest, ParsesNullArray) {
+    RespParser parser;
+    const auto result = parser.parse("*-1\r\n");
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->type, RespValue::Type::Null);
+}
+TEST(RespParserTest, ParsesEmptyArray) {
+    RespParser parser;
+    const auto result = parser.parse("*0\r\n");
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->type, RespValue::Type::Array);
+    ASSERT_TRUE(result->elements.empty());
+}
+TEST(RespParserTest, ParsesNestedArray) {
+    RespParser parser;
+    const auto result = parser.parse("*2\r\n*1\r\n:1\r\n*1\r\n:2\r\n");
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->type, RespValue::Type::Array);
+    ASSERT_EQ(result->elements.size(), 2);
+    ASSERT_EQ(result->elements.at(0).type, RespValue::Type::Array);
+    ASSERT_EQ(result->elements.at(1).type, RespValue::Type::Array);
+}
+TEST(RespParserTest, ParsesInteger) {
+    RespParser parser;
+    const auto result = parser.parse(":1000\r\n");
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->type, RespValue::Type::Integer);
+    ASSERT_EQ(result->str, "1000");
+}
+TEST(RespParserTest, ParsesSimpleString) {
+    RespParser parser;
+    const auto result = parser.parse("+OK\r\n");
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->type, RespValue::Type::SimpleString);
+    ASSERT_EQ(result->str, "OK");
+}
+TEST(RespParserTest, ParsesNullBulkString) {
+    RespParser parser;
+    const auto result = parser.parse("$-1\r\n");
+    ASSERT_TRUE(result.has_value());
+    ASSERT_EQ(result->type, RespValue::Type::Null);
+}
