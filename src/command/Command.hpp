@@ -31,6 +31,8 @@ struct Command {
     XRange,
     XRead,
     Incr,
+    Multi,
+    Exec,
     Unknown
   };
 
@@ -61,6 +63,8 @@ struct Command {
     if (compareStrings(name, "xrange")) { return Type::XRange; }
     if (compareStrings(name, "xread")) { return Type::XRead; }
     if (compareStrings(name, "incr")) { return Type::Incr; }
+    if (compareStrings(name, "multi")) { return Type::Multi; }
+    if (compareStrings(name, "exec")) { return Type::Exec; }
     return Type::Unknown;
   }
 };

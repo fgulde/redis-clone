@@ -3,9 +3,13 @@
 //
 
 #include "CommandHandler.hpp"
+#include <vector>
+#include <functional>
 
 CommandHandler::CommandHandler(Store &store, BlockingManager &blocking_manager) 
-    : registry_(build_registry(store, blocking_manager)) {}
+    : registry_(build_registry(store, blocking_manager, tm_,
+      [this](const Command::Type command_type) -> const ICommand * { return registry_.find(command_type); }))
+    , dispatcher_(registry_, tm_) {}
 
 auto CommandHandler::parse_command(const RespValue &request) -> Command {
   Command cmd;
@@ -21,18 +25,12 @@ auto CommandHandler::parse_command(const RespValue &request) -> Command {
 }
 
 void CommandHandler::handle(const RespValue& request, const asio::any_io_executor &executor,
-    const std::function<void(std::string)>& on_reply) const
-{
+    const std::function<void(std::string)>& on_reply) const {
   if ((request.type != RespValue::Type::Array)  || request.elements.empty()) {
     on_reply("-ERR invalid command format\r\n");
     return;
   }
 
   const auto cmd = parse_command(request);
-
-  if (const auto* command_impl = registry_.find(cmd.type)) {
-    command_impl->execute(cmd, executor, on_reply);
-  } else {
-    on_reply(std::format("-ERR unknown command '{}'\r\n", cmd.name));
-  }
+  dispatcher_.dispatch(request, cmd, executor, on_reply);
 }

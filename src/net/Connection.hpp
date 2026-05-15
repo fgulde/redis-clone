@@ -7,6 +7,7 @@
 #include <memory>
 #include "../command/CommandHandler.hpp"
 #include "../store/BlockingManager.hpp"
+#include "../resp/RespParser.hpp"
 
 using asio::ip::tcp;
 

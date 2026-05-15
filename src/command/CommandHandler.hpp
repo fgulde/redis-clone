@@ -8,9 +8,10 @@
 #include <string>
 
 #include "CommandRegistry.hpp"
-#include "../resp/RespParser.hpp"
+#include "TransactionDispatcher.hpp"
 #include "../store/Store.hpp"
 #include "../store/BlockingManager.hpp"
+#include "TransactionManager.hpp"
 
 /**
  * CommandHandler is responsible for processing incoming RESP requests in the form of RespValue objects,
@@ -32,7 +33,6 @@ public:
   void handle(const RespValue& request, const asio::any_io_executor &executor,
     const std::function<void(std::string)>& on_reply) const;
 
-private:
   /**
    * @brief Parses a RESP array request into a Command struct.
    * @param request Current command request as a RespValue (expected to be an array with the command name followed by arguments).
@@ -40,5 +40,8 @@ private:
    */
   static auto parse_command(const RespValue& request) -> Command;
 
+private:
   CommandRegistry registry_;
+  TransactionManager tm_;
+  TransactionDispatcher dispatcher_;
 };

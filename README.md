@@ -29,6 +29,7 @@ Already implemented:
 - List commands (`RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`, `BLPOP`)
 - Stream commands (`XADD`, `XRANGE`, `XREAD` incl. `BLOCK` support)
 - Auto-generated IDs (`*`, `ms-*`) for `XADD`, infinite bounds (`-`, `+`) for `XRANGE`, and `$` ID for `XREAD`
+- Transactions (`MULTI`, `EXEC`)
 - Lazy deletion of expired keys on access
 - Multithreaded architecture (multi-reactor pattern): thread pool (`network_ctx`) handles async I/O, separated from a single-threaded lock-free store execution loop (`store_ctx`)
 - Modular architecture (networking, RESP parsing, command handling, storage/sub-stores)
@@ -37,7 +38,6 @@ Already implemented:
 Planned:
 - RDB Persistence
 - AOF Persistence
-- Transactions
 - Replication
 - Pub/Sub
 - Sorted Sets
@@ -102,6 +102,8 @@ classDiagram
         + parse(buffer) RespValue
     }
     class CommandHandler {
+        - tm_
+        - dispatcher_
         + handle(...)
     }
     class Store
@@ -123,7 +125,17 @@ Incoming parsed requests are routed using a Command Pattern, ensuring the system
 classDiagram
     class CommandHandler {
         - registry_
+        - tm_
+        - dispatcher_
         + handle(request, executor, on_reply)
+    }
+    class TransactionDispatcher {
+        + dispatch(request, cmd, executor, on_reply)
+    }
+    class TransactionManager {
+        + begin()
+        + queue_command(request)
+        + is_active()
     }
     class CommandRegistry {
         - commands_
@@ -145,6 +157,10 @@ classDiagram
     class StreamStore
     
     CommandHandler "1" *-- "1" CommandRegistry : owns
+    CommandHandler "1" *-- "1" TransactionManager : owns
+    CommandHandler "1" *-- "1" TransactionDispatcher : owns
+    TransactionDispatcher --> CommandRegistry : looks up
+    TransactionDispatcher --> TransactionManager : queues in
     CommandRegistry "1" *-- "*" ICommand : manages
     ICommand <|-- SetCommand : implements
     ICommand <|-- BlpopCommand : implements
@@ -163,10 +179,13 @@ src/
 │   ├── CommandHandler.hpp / .cpp     # Processes requests via the registry
 │   ├── CommandRegistry.hpp / .cpp    # Maps command types to target implementations
 │   ├── ICommand.hpp                  # Abstract base for executable commands
+│   ├── TransactionDispatcher.hpp / .cpp # Routes commands during transactions
+│   ├── TransactionManager.hpp / .cpp # State management for transaction queues
 │   └── commands/                     # Concrete command implementations
 │       ├── BasicCommands.hpp / .cpp  # PING, SET, GET, ECHO, etc.
 │       ├── ListCommands.hpp / .cpp   # LPUSH, RPUSH, BLPOP, etc.
-│       └── StreamCommands.hpp / .cpp # XADD, XRANGE, XREAD
+│       ├── StreamCommands.hpp / .cpp # XADD, XRANGE, XREAD
+│       └── TransactionCommands.hpp / .cpp # MULTI, EXEC
 ├── net/
 │   ├── Server.hpp / .cpp             # Async TCP acceptor, manages connections
 │   └── Connection.hpp / .cpp         # Per-client async read loop

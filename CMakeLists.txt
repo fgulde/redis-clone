@@ -26,6 +26,8 @@ add_library(redis_lib STATIC
         src/command/CommandHandler.hpp
         src/command/CommandRegistry.cpp
         src/command/CommandRegistry.hpp
+        src/command/TransactionDispatcher.cpp
+        src/command/TransactionDispatcher.hpp
         src/command/ICommand.hpp
         src/util/CommandUtils.hpp
         src/command/commands/BasicCommands.cpp
@@ -34,6 +36,10 @@ add_library(redis_lib STATIC
         src/command/commands/ListCommands.hpp
         src/command/commands/StreamCommands.cpp
         src/command/commands/StreamCommands.hpp
+        src/command/commands/TransactionCommands.cpp
+        src/command/commands/TransactionCommands.hpp
+        src/command/TransactionManager.cpp
+        src/command/TransactionManager.hpp
         src/net/Connection.cpp
         src/net/Connection.hpp
         src/net/Server.cpp
@@ -108,6 +114,7 @@ add_executable(redis_tests
         tests/integration/type_test.cpp
         tests/integration/incr_test.cpp
         tests/integration/stream_test.cpp
+        tests/integration/transaction_test.cpp
         tests/helpers/test_server.hpp
         tests/helpers/test_client.hpp
 )

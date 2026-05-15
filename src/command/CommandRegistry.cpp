@@ -6,6 +6,7 @@
 #include "commands/BasicCommands.hpp"
 #include "commands/ListCommands.hpp"
 #include "commands/StreamCommands.hpp"
+#include "commands/TransactionCommands.hpp"
 
 void CommandRegistry::register_command(const Command::Type type, std::unique_ptr<ICommand> command) {
   commands_[type] = std::move(command);
@@ -18,7 +19,8 @@ auto CommandRegistry::find(const Command::Type type) const -> const ICommand* {
   return nullptr;
 }
 
-auto build_registry(Store& store, BlockingManager& blocking_manager) -> CommandRegistry {
+auto build_registry(Store& store, BlockingManager& blocking_manager, TransactionManager& transaction_manager,
+                   std::function<const ICommand*(Command::Type)> finder) -> CommandRegistry {
   CommandRegistry registry;
 
   // Basic Commands
@@ -41,6 +43,10 @@ auto build_registry(Store& store, BlockingManager& blocking_manager) -> CommandR
   registry.register_command(Command::Type::XAdd, std::make_unique<XAddCommand>(store, blocking_manager));
   registry.register_command(Command::Type::XRange, std::make_unique<XRangeCommand>(store));
   registry.register_command(Command::Type::XRead, std::make_unique<XReadCommand>(store, blocking_manager));
+
+  // Transaction Commands
+  registry.register_command(Command::Type::Multi, std::make_unique<MultiCommand>(transaction_manager));
+  registry.register_command(Command::Type::Exec, std::make_unique<ExecCommand>(transaction_manager, std::move(finder)));
 
   return registry;
 }

@@ -1,6 +1,8 @@
 //
 // Created by fguld on 4/29/2026.
 //
+// Created by fguld on 4/29/2026.
+//
 
 #pragma once
 
@@ -10,6 +12,8 @@
 #include "ICommand.hpp"
 #include "../store/Store.hpp"
 #include "../store/BlockingManager.hpp"
+#include "TransactionManager.hpp"
+#include <functional>
 
 /**
  * @brief Registry for all executable commands.
@@ -42,6 +46,9 @@ private:
  * @brief Factory function to build and populate a CommandRegistry with all supported commands.
  * @param store Reference to the data store.
  * @param blocking_manager Reference to the blocking manager.
+ * @param transaction_manager Reference to the transaction manager.
+ * @param finder Function to find other commands (needed for EXEC).
  * @return A fully populated CommandRegistry.
  */
-auto build_registry(Store& store, BlockingManager& blocking_manager) -> CommandRegistry;
+auto build_registry(Store& store, BlockingManager& blocking_manager, TransactionManager& transaction_manager,
+                   std::function<const ICommand*(Command::Type)> finder) -> CommandRegistry;
