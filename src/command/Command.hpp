@@ -33,6 +33,7 @@ struct Command {
     Incr,
     Multi,
     Watch,
+    Unwatch,
     Exec,
     Discard,
     Unknown
@@ -67,6 +68,7 @@ struct Command {
     if (compareStrings(name, "incr")) { return Type::Incr; }
     if (compareStrings(name, "multi")) { return Type::Multi; }
     if (compareStrings(name, "watch")) { return Type::Watch; }
+    if (compareStrings(name, "unwatch")) { return Type::Unwatch; }
     if (compareStrings(name, "exec")) { return Type::Exec; }
     if (compareStrings(name, "discard")) { return Type::Discard; }
     return Type::Unknown;

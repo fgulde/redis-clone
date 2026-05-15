@@ -31,3 +31,16 @@ void WatchCommand::execute(const Command& cmd, const asio::any_io_executor& /*ex
   on_reply("+OK\r\n");
 }
 
+void UnwatchCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
+                             const std::function<void(std::string)>& on_reply) const {
+  // UNWATCH clears all watched keys for this connection.
+  // It accepts no arguments - return error if arguments were given.
+  if (!cmd.args.empty()) {
+    on_reply(std::format("-ERR wrong number of arguments for '{}' command\r\n", cmd.name));
+    return;
+  }
+
+  tm_.clear_watches();
+  on_reply("+OK\r\n");
+}
+

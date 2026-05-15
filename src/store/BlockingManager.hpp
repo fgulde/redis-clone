@@ -101,6 +101,6 @@ public:
   void serve_xread_waiters(const std::string& key);
 
 private:
-  BlockingRegistry<BlpopCallback> blpop_registry_;
-  BlockingRegistry<XReadCallback> xread_registry_;
+  BlockingRegistry<BlpopCallback> blpop_registry_; ///< Registry for BLPOP callbacks, mapping keys to lists of waiting clients
+  BlockingRegistry<XReadCallback> xread_registry_; ///< Registry for XREAD callbacks, mapping keys to lists of waiting clients
 };

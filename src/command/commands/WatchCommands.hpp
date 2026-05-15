@@ -31,3 +31,16 @@ private:
   WatchManager& watch_manager_; ///< Reference to the watch manager to register the watch callbacks for the specified keys.
 };
 
+/**
+ * @brief Command to unwatch all keys for the current connection.
+ */
+class UnwatchCommand : public ICommand {
+public:
+  explicit UnwatchCommand(TransactionManager& tm) : tm_(tm) {}
+  void execute(const Command& cmd, const asio::any_io_executor& executor,
+               const std::function<void(std::string)>& on_reply) const override;
+
+private:
+  TransactionManager& tm_;
+};
+

@@ -47,6 +47,7 @@ auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManage
 
   // Watch Commands
   registry.register_command(Command::Type::Watch, std::make_unique<WatchCommand>(transaction_manager, watch_manager));
+  registry.register_command(Command::Type::Unwatch, std::make_unique<UnwatchCommand>(transaction_manager));
 
   // Transaction Commands
   registry.register_command(Command::Type::Multi, std::make_unique<MultiCommand>(transaction_manager));

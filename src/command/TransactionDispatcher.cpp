@@ -11,9 +11,9 @@ TransactionDispatcher::TransactionDispatcher(const CommandRegistry& registry, Tr
 void TransactionDispatcher::dispatch(const RespValue& request, const Command& cmd,
                                     const asio::any_io_executor& executor,
                                     const std::function<void(std::string)>& on_reply) const {
-  // MULTI, WATCH, EXEC, and DISCARD are always handled directly by their command implementations,
+  // MULTI, WATCH, UNWATCH, EXEC, and DISCARD are always handled directly by their command implementations,
   // even when a transaction is active.
-  if (cmd.type == Command::Type::Multi || cmd.type == Command::Type::Watch ||
+  if (cmd.type == Command::Type::Multi || cmd.type == Command::Type::Watch || cmd.type == Command::Type::Unwatch ||
       cmd.type == Command::Type::Exec || cmd.type == Command::Type::Discard) {
     if (const auto* command_impl = registry_.find(cmd.type)) {
       // Do not allow nested MULTI calls, even if we are already in a transaction.
