@@ -5,208 +5,197 @@
 [![codecov](https://codecov.io/gh/fgulde/redis-clone/graph/badge.svg)](https://codecov.io/gh/fgulde/redis-clone)
 ![Last Commit](https://img.shields.io/github/last-commit/fgulde/redis-clone)
 
-
-A Redis-compatible server implementation built from scratch in **C++23**.
+A Redis-compatible server built from scratch in **C++23**, exploring in-memory databases, async I/O, and concurrent systems programming.
 
 ## Goal
 
-This project explores how a Redis-style in-memory database can be implemented from scratch in C++.  
-The focus is on learning and understanding the internals of Redis.
+This project reimplements core Redis internals as an exercise in systems programming. The focus is on understanding and rebuilding the primitives that make Redis fast:
 
-Areas of exploration include:
+- Non-blocking TCP networking with Asio
+- RESP2 wire protocol — parsing and serialization
+- In-memory storage with TTL and lazy expiry
+- Lock-free concurrency via a dual Asio context (multi-reactor) design
+- Extensible command dispatch using the Command pattern
+- Client transactions and optimistic locking
 
-- TCP networking and socket programming
-- The RESP (Redis Serialization Protocol) wire format
-- Command parsing
-- In-memory data structures
-- Concurrency & event loops
-- Client/server communication
+---
 
 ## Current Status
 
-Already implemented:
-- RESP2 protocol parsing (`SimpleString`, `BulkString`, `Integer`, `Array`, `Null`)
-- Key-Value commands (`SET`, `GET`, `TYPE`, `INCR`)
-- Key expiration via `EX` (seconds) and `PX` (milliseconds) flags on `SET`
-- Basic utility commands (`PING`, `ECHO`)
-- List commands (`RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`, `BLPOP`)
-- Stream commands (`XADD`, `XRANGE`, `XREAD` incl. `BLOCK` support)
-- Auto-generated IDs (`*`, `ms-*`) for `XADD`, infinite bounds (`-`, `+`) for `XRANGE`, and `$` ID for `XREAD`
-- Transactions (`MULTI`, `EXEC`, `DISCARD`)
-- Lazy deletion of expired keys on access
-- Multithreaded architecture (multi-reactor pattern): thread pool (`network_ctx`) handles async I/O, separated from a single-threaded lock-free store execution loop (`store_ctx`)
-- Modular architecture (networking, RESP parsing, command handling, storage/sub-stores)
-- Support for customizable port via `--port` command line argument and `REDIS_PORT` environment variable
+### Implemented
 
-Planned:
-- RDB Persistence
-- AOF Persistence
-- Replication
-- Pub/Sub
+#### Networking & Protocol
+- RESP2 parsing: `SimpleString`, `BulkString`, `Integer`, `Array`, `Null`
+- Multi-reactor architecture: 4 async I/O threads + 1 lock-free store thread
+- Configurable port via `--port` flag or `REDIS_PORT` environment variable
+
+#### Core Commands
+- `SET`, `GET`, `TYPE`, `INCR`
+- Key expiration via `EX` (seconds) and `PX` (milliseconds)
+- Lazy deletion of expired keys on access
+
+#### List Commands
+- `RPUSH`, `LPUSH`, `LRANGE`, `LLEN`, `LPOP`
+- `BLPOP` with configurable timeout
+
+#### Stream Commands
+- `XADD` with support for auto-generated IDs (`*`, `ms-*`)
+- `XRANGE`with support for infinite bounds (`-`, `+`)
+- `XREAD` including `BLOCK` mode and `$` for new entries only
+
+#### Transactions & Locking
+- `MULTI`, `EXEC`, `DISCARD`
+- `WATCH`, `UNWATCH`, optimistic locking with dirty-transaction detection
+
+### Planned
+
+- RDB / AOF persistence
+- Primary–replica replication
+- Pub/Sub channels and patterns
 - Sorted Sets
 - Geospatial commands
-- Authentication
-- Optimistic locking
+- AUTH / ACL
+
+---
 
 ## Tech Stack
-
 - **Language:** C++23
 - **Build System:** CMake
 - **Package Management:** vcpkg
-- **Networking:** asio (standalone)
-- **Testing:** Google Test (GTest)
+- **Async Networking:** Asio (standalone)
+- **Testing:** Google Test
+- **CI:** GitHub Actions
+- **Coverage:** Codecov
 
-## Building
-To build and run the server locally, you can use the provided script:
+---
+
+## Quick Start
+
+**Build and run:**
 ```bash
 ./program.sh
-```
-Or with a specific port:
-```bash
 ./program.sh --port 6380
 ```
 
-You can then connect with any Redis client:
+**Connect with any Redis client:**
 ```bash
 redis-cli ping
 redis-cli -p 6379
 ```
 
-## Testing
-To build and run the test suite (using GTest and CTest), use:
+**Run the test suite:**
 ```bash
 ./run_tests.sh
 ```
 
-## Architecture & Interaction
+---
 
-To enforce separation of concerns, the architecture is decoupled into two primary areas: network I/O and command execution.
+## Architecture
 
-### 1. System & Networking
-This layer manages the async event loop, individual client connections, and RESP protocol parsing. A dedicated pool of I/O threads is used for connection handling, while command execution and State management run safely within a lock-free single background thread.
+The server separates **network I/O** from **store execution** using two independent Asio contexts. All store operations run sequentially on a single dedicated thread — no locks required.
+
+### System Overview
+
+Commands travel from the network pool to the store thread via `asio::post`, and replies return the same way.
 
 ```mermaid
-classDiagram
-    class Server {
-        - network_ctx_
-        - store_ctx_
-        - acceptor_
-        - store_
-        - blocking_manager_
-        + run()
-        - do_accept()
-    }
-    class Connection {
-        - socket
-        + start()
-        - do_read()
-    }
-    class RespParser {
-        + parse(buffer) RespValue
-    }
-    class CommandHandler {
-        - tm_
-        - dispatcher_
-        + handle(...)
-    }
-    class Store
-    class BlockingManager
-    
-    Server "1" *-- "1" Store : owns
-    Server "1" *-- "1" BlockingManager : owns
-    Server "1" --> "*" Connection : creates
-    Connection "1" *-- "1" RespParser : owns
-    Connection "1" *-- "1" CommandHandler : owns
-    CommandHandler "*" --> "1" Store : references
-    CommandHandler "*" --> "1" BlockingManager : references
+flowchart LR
+    subgraph net_pool["Network Pool — 4 Async I/O Threads"]
+        A[TCP Acceptor] --> B[Connection]
+        B --> C[RespParser]
+    end
+
+    subgraph store_thread["Store Thread — Lock-Free"]
+        D[CommandHandler] --> E[(Store)]
+        D --> F[BlockingManager]
+        E --> G[StringStore]
+        E --> H[ListStore]
+        E --> I[StreamStore]
+    end
+
+    C -->|"asio::post(store_ctx_)"| D
+    D -->|"asio::post(socket_executor)"| B
 ```
 
-### 2. Command Dispatch
-Incoming parsed requests are routed using a Command Pattern, ensuring the system remains easily extensible when adding new Redis commands.
+### Command Dispatch
+
+`CommandHandler` routes each request through the `TransactionDispatcher`, which either queues it inside an active `MULTI` block or resolves it immediately via `CommandRegistry`. All concrete commands implement `ICommand`.
 
 ```mermaid
 classDiagram
-    class CommandHandler {
-        - registry_
-        - tm_
-        - dispatcher_
-        + handle(request, executor, on_reply)
+    namespace Dispatch {
+        class CommandHandler {
+            -registry_ CommandRegistry
+            -dispatcher_ TransactionDispatcher
+            -tm_ TransactionManager
+            +handle(request, executor, on_reply)
+        }
+        class TransactionDispatcher {
+            +dispatch(request, cmd, executor, on_reply)
+        }
+        class TransactionManager {
+            +begin()
+            +queue_command(request)
+            +is_active() bool
+        }
+        class CommandRegistry {
+            +register_command(type, cmd)
+            +find(type) ICommand ptr
+        }
+        class ICommand {
+            <<interface>>
+            +execute(cmd, executor, on_reply)*
+        }
     }
-    class TransactionDispatcher {
-        + dispatch(request, cmd, executor, on_reply)
-    }
-    class TransactionManager {
-        + begin()
-        + queue_command(request)
-        + is_active()
-    }
-    class CommandRegistry {
-        - commands_
-        + register_command(type, command)
-        + find(type)
-    }
-    class ICommand {
-        <<interface>>
-        + execute(cmd, executor, on_reply)*
-    }
-    class Store {
-        + set(...)
-        + get(...)
-        + type(...)
-        + ...()
-    }
-    class StringStore
-    class ListStore
-    class StreamStore
-    
-    CommandHandler "1" *-- "1" CommandRegistry : owns
-    CommandHandler "1" *-- "1" TransactionManager : owns
-    CommandHandler "1" *-- "1" TransactionDispatcher : owns
+
+    CommandHandler "1" *-- "1" CommandRegistry
+    CommandHandler "1" *-- "1" TransactionDispatcher
+    CommandHandler "1" *-- "1" TransactionManager
     TransactionDispatcher --> CommandRegistry : looks up
     TransactionDispatcher --> TransactionManager : queues in
-    CommandRegistry "1" *-- "*" ICommand : manages
-    ICommand <|-- SetCommand : implements
-    ICommand <|-- BlpopCommand : implements
-    ICommand "*" --> "1" Store : accesses
-    Store "1" *-- "1" StringStore : delegates
-    Store "1" *-- "1" ListStore : delegates
-    Store "1" *-- "1" StreamStore : delegates
+    CommandRegistry "1" *-- "*" ICommand
+    ICommand <|.. SetCommand : implements
+    ICommand <|.. BlpopCommand : implements
 ```
 
+---
+
 ## Project Structure
+
 ```
 src/
-├── main.cpp                          # Entry point, sets up and runs the server
-├── command/
-│   ├── Command.hpp                   # Command struct and type enum
-│   ├── CommandHandler.hpp / .cpp     # Processes requests via the registry
-│   ├── CommandRegistry.hpp / .cpp    # Maps command types to target implementations
-│   ├── ICommand.hpp                  # Abstract base for executable commands
-│   ├── TransactionDispatcher.hpp / .cpp # Routes commands during transactions
-│   ├── TransactionManager.hpp / .cpp # State management for transaction queues
-│   └── commands/                     # Concrete command implementations
-│       ├── BasicCommands.hpp / .cpp  # PING, SET, GET, ECHO, etc.
-│       ├── ListCommands.hpp / .cpp   # LPUSH, RPUSH, BLPOP, etc.
-│       ├── StreamCommands.hpp / .cpp # XADD, XRANGE, XREAD
-│       └── TransactionCommands.hpp / .cpp # MULTI, EXEC
+├── main.cpp
 ├── net/
-│   ├── Server.hpp / .cpp             # Async TCP acceptor, manages connections
+│   ├── Server.hpp / .cpp             # TCP acceptor, owns shared state
 │   └── Connection.hpp / .cpp         # Per-client async read loop
 ├── resp/
-│   ├── RespValue.hpp                 # RESP value type
-│   └── RespParser.hpp / .cpp         # RESP2 protocol parser
+│   ├── RespValue.hpp                 # RESP2 value type (variant)
+│   └── RespParser.hpp / .cpp         # Stateless RESP2 parser
+├── command/
+│   ├── ICommand.hpp                  # Pure-virtual command interface
+│   ├── CommandHandler.hpp / .cpp     # Routes requests via registry & dispatcher
+│   ├── CommandRegistry.hpp / .cpp    # Maps Command::Type → ICommand
+│   ├── TransactionDispatcher.hpp / .cpp
+│   ├── TransactionManager.hpp / .cpp
+│   ├── WatchManager.hpp / .cpp
+│   └── commands/
+│       ├── BasicCommands.hpp / .cpp  # PING, ECHO, SET, GET, TYPE, INCR
+│       ├── ListCommands.hpp / .cpp   # RPUSH, LPUSH, LRANGE, LLEN, LPOP, BLPOP
+│       ├── StreamCommands.hpp / .cpp # XADD, XRANGE, XREAD
+│       ├── TransactionCommands.hpp / .cpp # MULTI, EXEC, DISCARD
+│       └── WatchCommands.hpp / .cpp  # WATCH, UNWATCH
 ├── store/
-│   ├── Store.hpp                     # Header-only facade for specialized sub-stores
-│   ├── StoreValue.hpp                # Data structures for stored values
-│   ├── StringStore.hpp / .cpp        # Handles strings, INCR and TTL/expiry
-│   ├── ListStore.hpp / .cpp          # Handles list operations (RPUSH, LPOP, etc.)
-│   ├── StreamStore.hpp / .cpp        # Handles stream operations (XADD, etc.)
-│   ├── BlockingManager.hpp / .cpp    # Manages async waiting clients (BLPOP, etc.)
+│   ├── Store.hpp                     # Facade delegating to sub-stores
+│   ├── StoreValue.hpp                # std::variant<string, deque, Stream> + TTL
+│   ├── StringStore.hpp / .cpp
+│   ├── ListStore.hpp / .cpp
+│   ├── StreamStore.hpp / .cpp
+│   ├── BlockingManager.hpp / .cpp    # Callback registry for BLPOP / XREAD BLOCK
 │   └── types/
-│       ├── Stream.hpp                # Stream data structure
-│       └── StreamIdUtils.hpp / .cpp  # Stream ID parsing and generation
+│       ├── Stream.hpp
+│       └── StreamIdUtils.hpp / .cpp
 └── util/
-    ├── CommandUtils.hpp              # Command parsing utilities
-    ├── Logger.hpp                    # Simple logger implementation
-    └── StringUtils.hpp               # String helper utilities
+    ├── Logger.hpp
+    ├── StringUtils.hpp
+    └── CommandUtils.hpp
 ```
