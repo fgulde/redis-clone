@@ -6,7 +6,7 @@
 
 #include "../ICommand.hpp"
 #include "../TransactionManager.hpp"
-#include "../WatchManager.hpp"
+#include "../../state/WatchManager.hpp"
 
 /**
  * @brief Command to watch keys for optimistic locking.

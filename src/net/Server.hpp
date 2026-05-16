@@ -6,8 +6,8 @@
 #include <asio.hpp>
 
 #include "../store/Store.hpp"
-#include "../store/BlockingManager.hpp"
-#include "../command/WatchManager.hpp"
+#include "../state/BlockingManager.hpp"
+#include "../state/WatchManager.hpp"
 
 using asio::ip::tcp;
 

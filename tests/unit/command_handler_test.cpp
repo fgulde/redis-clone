@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 #include "command/CommandHandler.hpp"
-#include "store/BlockingManager.hpp"
+#include "state/BlockingManager.hpp"
 #include "resp/RespValue.hpp"
 
 namespace {

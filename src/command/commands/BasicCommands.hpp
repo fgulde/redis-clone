@@ -5,7 +5,7 @@
 #pragma once
 
 #include "../ICommand.hpp"
-#include "../WatchManager.hpp"
+#include "../../state/WatchManager.hpp"
 #include "../../store/Store.hpp"
 
 /**

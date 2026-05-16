@@ -6,8 +6,8 @@
 
 #include "../ICommand.hpp"
 #include "../../store/Store.hpp"
-#include "../../store/BlockingManager.hpp"
-#include "../WatchManager.hpp"
+#include "../../state/BlockingManager.hpp"
+#include "../../state/WatchManager.hpp"
 
 /**
  * @brief Command to append one or multiple elements to a list.

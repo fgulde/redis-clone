@@ -51,3 +51,4 @@ private:
   uint64_t next_id_{1}; ///< Monotonically increasing ID generator for watch registrations
 };
 
+

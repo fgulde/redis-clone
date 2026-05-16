@@ -172,6 +172,12 @@ void setup_xread_blocking(Store& store, BlockingManager& blocking_manager,
 
 } // end helper functions und structs
 
+
+// ------------------------------------
+
+
+// Command implementations
+
 void XAddCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                           const std::function<void(std::string)>& on_reply) const {
   if (cmd.args.size() < 4 || (cmd.args.size() - 2) % 2 != 0) {

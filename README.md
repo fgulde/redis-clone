@@ -12,7 +12,7 @@ A Redis-compatible server built from scratch in **C++23**, exploring in-memory d
 This project reimplements core Redis internals as an exercise in systems programming. The focus is on understanding and rebuilding the primitives that make Redis fast:
 
 - Non-blocking TCP networking with Asio
-- RESP2 wire protocol — parsing and serialization
+- RESP2 wire protocol - parsing and serialization
 - In-memory storage with TTL and lazy expiry
 - Lock-free concurrency via a dual Asio context (multi-reactor) design
 - Extensible command dispatch using the Command pattern
@@ -92,7 +92,7 @@ redis-cli -p 6379
 
 ## Architecture
 
-The server separates **network I/O** from **store execution** using two independent Asio contexts. All store operations run sequentially on a single dedicated thread — no locks required.
+The server separates **network I/O** from **store execution** using two independent Asio contexts. All store operations run sequentially on a single dedicated thread – no locks required.
 
 ### System Overview
 
@@ -100,12 +100,12 @@ Commands travel from the network pool to the store thread via `asio::post`, and 
 
 ```mermaid
 flowchart LR
-    subgraph net_pool["Network Pool — 4 Async I/O Threads"]
+    subgraph net_pool["Network Pool: 4 Async I/O Threads"]
         A[TCP Acceptor] --> B[Connection]
         B --> C[RespParser]
     end
 
-    subgraph store_thread["Store Thread — Lock-Free"]
+    subgraph store_thread["1 Store Thread: Lock-Free"]
         D[CommandHandler] --> E[(Store)]
         D --> F[BlockingManager]
         E --> G[StringStore]
@@ -171,13 +171,15 @@ src/
 ├── resp/
 │   ├── RespValue.hpp                 # RESP2 value type (variant)
 │   └── RespParser.hpp / .cpp         # Stateless RESP2 parser
+├── state/
+│   ├── WatchManager.hpp / .cpp       # Shared WATCH registry for all connections
+│   └── BlockingManager.hpp / .cpp    # Shared blocking registry for BLPOP / XREAD BLOCK
 ├── command/
 │   ├── ICommand.hpp                  # Pure-virtual command interface
 │   ├── CommandHandler.hpp / .cpp     # Routes requests via registry & dispatcher
 │   ├── CommandRegistry.hpp / .cpp    # Maps Command::Type → ICommand
 │   ├── TransactionDispatcher.hpp / .cpp
 │   ├── TransactionManager.hpp / .cpp
-│   ├── WatchManager.hpp / .cpp
 │   └── commands/
 │       ├── BasicCommands.hpp / .cpp  # PING, ECHO, SET, GET, TYPE, INCR
 │       ├── ListCommands.hpp / .cpp   # RPUSH, LPUSH, LRANGE, LLEN, LPOP, BLPOP
@@ -190,7 +192,6 @@ src/
 │   ├── StringStore.hpp / .cpp
 │   ├── ListStore.hpp / .cpp
 │   ├── StreamStore.hpp / .cpp
-│   ├── BlockingManager.hpp / .cpp    # Callback registry for BLPOP / XREAD BLOCK
 │   └── types/
 │       ├── Stream.hpp
 │       └── StreamIdUtils.hpp / .cpp

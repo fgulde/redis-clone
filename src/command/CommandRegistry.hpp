@@ -11,8 +11,8 @@
 #include "Command.hpp"
 #include "ICommand.hpp"
 #include "../store/Store.hpp"
-#include "../store/BlockingManager.hpp"
-#include "WatchManager.hpp"
+#include "../state/BlockingManager.hpp"
+#include "../state/WatchManager.hpp"
 #include "TransactionManager.hpp"
 #include <functional>
 

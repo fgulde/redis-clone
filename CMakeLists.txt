@@ -42,8 +42,8 @@ add_library(redis_lib STATIC
         src/command/commands/TransactionCommands.hpp
         src/command/TransactionManager.cpp
         src/command/TransactionManager.hpp
-        src/command/WatchManager.cpp
-        src/command/WatchManager.hpp
+        src/state/WatchManager.cpp
+        src/state/WatchManager.hpp
         src/net/Connection.cpp
         src/net/Connection.hpp
         src/net/Server.cpp
@@ -63,8 +63,8 @@ add_library(redis_lib STATIC
         src/util/StringUtils.hpp
         src/resp/RespValue.hpp
         src/store/StoreValue.hpp
-        src/store/BlockingManager.cpp
-        src/store/BlockingManager.hpp
+        src/state/BlockingManager.cpp
+        src/state/BlockingManager.hpp
 )
 
 # Enforce strict modern C++ standards
