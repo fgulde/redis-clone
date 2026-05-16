@@ -44,6 +44,7 @@ add_library(redis_lib STATIC
         src/command/execution/TransactionManager.hpp
         src/state/WatchManager.cpp
         src/state/WatchManager.hpp
+        src/state/ServerConfig.hpp
         src/net/Connection.cpp
         src/net/Connection.hpp
         src/net/Server.cpp
@@ -123,6 +124,7 @@ add_executable(redis_tests
         tests/integration/incr_test.cpp
         tests/integration/stream_test.cpp
         tests/integration/transaction_test.cpp
+        tests/integration/info_replication_test.cpp
         tests/helpers/test_server.hpp
         tests/helpers/test_client.hpp
 )

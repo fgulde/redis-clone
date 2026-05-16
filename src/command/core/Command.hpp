@@ -17,6 +17,7 @@
 struct Command {
   enum class Type : std::uint8_t {
     Ping,
+    Info,
     Echo,
     Set,
     Get,
@@ -52,6 +53,7 @@ struct Command {
     };
 
     if (compareStrings(name, "ping")) { return Type::Ping; }
+    if (compareStrings(name, "info")) { return Type::Info; }
     if (compareStrings(name, "echo")) { return Type::Echo; }
     if (compareStrings(name, "set")) {  return Type::Set; }
     if (compareStrings(name, "get")) {  return Type::Get; }

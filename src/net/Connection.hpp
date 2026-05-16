@@ -8,6 +8,7 @@
 #include "../command/execution/CommandHandler.hpp"
 #include "../state/BlockingManager.hpp"
 #include "../state/WatchManager.hpp"
+#include "../state/ServerConfig.hpp"
 #include "../resp/RespParser.hpp"
 
 using asio::ip::tcp;
@@ -21,7 +22,7 @@ using asio::ip::tcp;
  */
 class Connection : public std::enable_shared_from_this<Connection> {
 public:
-  explicit Connection(tcp::socket socket, Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager, asio::io_context& store_ctx);
+  explicit Connection(tcp::socket socket, Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager, asio::io_context& store_ctx, const ServerConfig& config);
   void start(); ///< Public wrapper method for calling do_read()
 
 private:
@@ -31,6 +32,7 @@ private:
   Store& store_; ///< Reference to the shared Store, used to initialize CommandHandler
   BlockingManager& blocking_manager_; ///< Reference to the shared blocking manager
   WatchManager& watch_manager_; ///< Reference to the shared watch manager
+  ServerConfig config_; ///< Server configuration including replication role
   asio::io_context& store_ctx_; ///< Reference to the store io_context
   CommandHandler handler_; ///< Handles command parsing and execution for each connection
   asio::streambuf buf_; ///< Internal read buffer, where asio writes incoming bytes

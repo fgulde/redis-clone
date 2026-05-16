@@ -6,6 +6,7 @@
 #include <thread>
 #include <vector>
 #include "net/Server.hpp"
+#include "state/ServerConfig.hpp"
 
 auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easily-swappable-parameters)
   std::cout << std::unitbuf;
@@ -13,6 +14,7 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
 
   constexpr int default_port{ 6379 };
   int port { default_port };
+  ServerConfig config { ServerConfig::master() };
 
   // Check environment variable first (e.g., for test configuration), then command-line arguments
   for (char* const* env = envp; *env != nullptr; env = std::next(env)) {
@@ -23,7 +25,7 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
     }
   }
 
-  // Simple command-line parsing for --port argument (overrides environment variable if provided)
+  // Simple command-line parsing for --port and --replicaof arguments (--port overrides environment variable if provided)
   std::span const args(argv, argc);
 
   std::span const parse_args = args.empty() ? args : args.subspan(1);
@@ -32,10 +34,19 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
     if (const std::string_view arg(*it); arg == "--port" && std::next(it) != parse_args.end()) {
       std::string_view const port_str(*++it);
 
-      auto [ptr, ec] = std::from_chars(port_str.data(), port_str.data() + port_str.size(), port); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
-
-      if (ec != std::errc()) {
+      // Parse the port number using std::from_chars for robust error handling
+      if (auto [ptr, ec] = std::from_chars(port_str.data(), port_str.data() + port_str.size(), port);
+        ec != std::errc()) {
         std::cerr << "Invalid port argument: '" << port_str << "'\n";
+      }
+    } else if (arg == "--replicaof" && std::next(it) != parse_args.end()) {
+      // Parse the replicaof argument (expects "<MASTER_HOST> <MASTER_PORT>" format)
+      const std::string host(*++it);
+      if (std::next(it) != parse_args.end()) {
+        const std::string replica_port(*++it);
+        config = ServerConfig::replica(host + " " + replica_port);
+      } else {
+        std::cerr << "Invalid --replicaof argument: expected 'host port'\n";
       }
     }
   }
@@ -43,12 +54,17 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
   asio::io_context network_ctx;
   asio::io_context store_ctx;
 
-  Server server(network_ctx, port, store_ctx);
+  Server server(network_ctx, port, store_ctx, config);
 
   server.run();
 
   // Replaced std::println with std::cout due to missing <print> support in CI
   std::cout << "Server is running on port " << port << "...\n";
+  if (config.is_replica()) {
+    std::cout << "Server is running as a replica of " << *config.replicaof << "\n";
+  } else {
+    std::cout << "Server is running as a master\n";
+  }
 
   // Start the store thread (single-threaded for lock-free store execution)
   std::jthread const store_thread([&]() -> void {

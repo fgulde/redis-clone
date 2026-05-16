@@ -8,6 +8,7 @@
 #include "../store/core/Store.hpp"
 #include "../state/BlockingManager.hpp"
 #include "../state/WatchManager.hpp"
+#include "../state/ServerConfig.hpp"
 
 using asio::ip::tcp;
 
@@ -19,7 +20,8 @@ using asio::ip::tcp;
  */
 class Server {
 public:
-  Server(asio::io_context& network_ctx, unsigned short port, asio::io_context& store_ctx);
+  Server(asio::io_context& network_ctx, unsigned short port, asio::io_context& store_ctx,
+    const ServerConfig& config = ServerConfig::master());
   void run(); /// Public wrapper method for calling do_accept()
 
   /** @brief Returns the port number the server is listening to.
@@ -35,5 +37,6 @@ private:
   WatchManager watch_manager_; ///< Shared watch manager for all connections
   asio::io_context& network_ctx_; ///< Reference to the network io_context
   asio::io_context& store_ctx_; ///< Reference to the store io_context
+  ServerConfig config_; ///< Server configuration including the replication role
   tcp::acceptor acceptor_; ///< Listens and accepts incoming TCP connections
 };

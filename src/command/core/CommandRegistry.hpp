@@ -13,6 +13,7 @@
 #include "../../store/core/Store.hpp"
 #include "../../state/BlockingManager.hpp"
 #include "../../state/WatchManager.hpp"
+#include "../../state/ServerConfig.hpp"
 #include "../execution/TransactionManager.hpp"
 #include <functional>
 
@@ -49,8 +50,10 @@ private:
  * @param blocking_manager Reference to the blocking manager.
  * @param watch_manager Reference to the watch manager.
  * @param transaction_manager Reference to the transaction manager.
+ * @param config Server configuration (replication role, etc).
  * @param finder Function to find other commands (needed for EXEC).
  * @return A fully populated CommandRegistry.
  */
-auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager, TransactionManager& transaction_manager,
+auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager,
+  TransactionManager& transaction_manager, const ServerConfig& config,
                    std::function<const ICommand*(Command::Type)> finder) -> CommandRegistry;

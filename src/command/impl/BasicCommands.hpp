@@ -4,8 +4,10 @@
 
 #pragma once
 
+#include <utility>
 #include "../core/ICommand.hpp"
 #include "../../state/WatchManager.hpp"
+#include "../../state/ServerConfig.hpp"
 #include "../../store/core/Store.hpp"
 
 /**
@@ -15,6 +17,18 @@ class PingCommand : public ICommand {
 public:
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
+};
+
+/**
+ * @brief Command to return server information and statistics.
+ */
+class InfoCommand : public ICommand {
+public:
+  explicit InfoCommand(ServerConfig config) : config_(std::move(config)) {}
+  void execute(const Command& cmd, const asio::any_io_executor& executor,
+               const std::function<void(std::string)>& on_reply) const override;
+private:
+  ServerConfig config_;
 };
 
 /**

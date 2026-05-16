@@ -20,12 +20,13 @@ auto CommandRegistry::find(const Command::Type type) const -> const ICommand* {
   return nullptr;
 }
 
-auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager, TransactionManager& transaction_manager,
+auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager, TransactionManager& transaction_manager, const ServerConfig& config,
                    std::function<const ICommand*(Command::Type)> finder) -> CommandRegistry {
   CommandRegistry registry;
 
   // Basic Commands
   registry.register_command(Command::Type::Ping, std::make_unique<PingCommand>());
+  registry.register_command(Command::Type::Info, std::make_unique<InfoCommand>(config));
   registry.register_command(Command::Type::Echo, std::make_unique<EchoCommand>());
   registry.register_command(Command::Type::Set, std::make_unique<SetCommand>(store, watch_manager));
   registry.register_command(Command::Type::Get, std::make_unique<GetCommand>(store));

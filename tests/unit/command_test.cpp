@@ -6,6 +6,7 @@
 #include "../../src/command/core/Command.hpp"
 TEST(CommandTest, ParseType) {
     EXPECT_EQ(Command::parse_type("ping"), Command::Type::Ping);
+    EXPECT_EQ(Command::parse_type("info"), Command::Type::Info);
     EXPECT_EQ(Command::parse_type("echo"), Command::Type::Echo);
     EXPECT_EQ(Command::parse_type("set"), Command::Type::Set);
     EXPECT_EQ(Command::parse_type("get"), Command::Type::Get);

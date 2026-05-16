@@ -6,6 +6,8 @@
 // without starting a server or network connection.
 
 #include <gtest/gtest.h>
+#include <string>
+#include <regex>
 #include "../../src/command/execution/CommandHandler.hpp"
 #include "state/BlockingManager.hpp"
 #include "resp/RespValue.hpp"
@@ -52,6 +54,37 @@ TEST_F(CommandHandlerTest, PingReturnsSimplePong) {
 
 TEST_F(CommandHandlerTest, PingWithMessageReturnsBulkString) {
     EXPECT_EQ(handle("PING", {"hello"}), "$5\r\nhello\r\n");
+}
+
+TEST_F(CommandHandlerTest, InfoReturnsAllSectionsByDefault) {
+    const auto response = handle("INFO", {});
+
+    ASSERT_FALSE(response.empty());
+    EXPECT_EQ(response.front(), '$');
+    EXPECT_NE(response.find("# Server\r\n"), std::string::npos);
+    EXPECT_NE(response.find("# Clients\r\n"), std::string::npos);
+    EXPECT_NE(response.find("# Memory\r\n"), std::string::npos);
+    EXPECT_NE(response.find("# Replication\r\n"), std::string::npos);
+}
+
+TEST_F(CommandHandlerTest, InfoReplicationReturnsReplicationSection) {
+    const auto response = handle("INFO", {"replication"});
+
+    ASSERT_FALSE(response.empty());
+    EXPECT_EQ(response.front(), '$');
+    EXPECT_NE(response.find("# Replication\r\n"), std::string::npos);
+    EXPECT_NE(response.find("role:master\r\n"), std::string::npos);
+    EXPECT_NE(response.find("connected_slaves:0\r\n"), std::string::npos);
+    EXPECT_NE(response.find("master_repl_offset:0\r\n"), std::string::npos);
+
+    const std::regex replid_pattern{R"(master_replid:([A-Za-z0-9]{40})\r\n)"};
+    EXPECT_TRUE(std::regex_search(response, replid_pattern));
+}
+
+TEST_F(CommandHandlerTest, InfoWithTooManyArgumentsReturnsError) {
+    const auto response = handle("INFO", {"replication", "extra"});
+
+    EXPECT_EQ(response.substr(0, 4), "-ERR");
 }
 
 TEST_F(CommandHandlerTest, EchoReturnsArgument) {

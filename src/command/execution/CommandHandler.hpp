@@ -12,6 +12,7 @@
 #include "../../store/core/Store.hpp"
 #include "../../state/BlockingManager.hpp"
 #include "../../state/WatchManager.hpp"
+#include "../../state/ServerConfig.hpp"
 #include "TransactionManager.hpp"
 
 /**
@@ -20,7 +21,8 @@
  */
 class CommandHandler {
 public:
-  explicit CommandHandler(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager);
+  explicit CommandHandler(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager,
+    const ServerConfig& config = ServerConfig::master());
 
   /**
    * @brief Handles a RESP request and produces a response string via an async callback.
@@ -45,4 +47,5 @@ private:
   TransactionManager tm_;
   CommandRegistry registry_;
   TransactionDispatcher dispatcher_;
+  ServerConfig config_; ///< Server configuration including replication role
 };

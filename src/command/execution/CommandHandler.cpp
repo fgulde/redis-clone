@@ -6,11 +6,13 @@
 #include <vector>
 #include <functional>
 
-CommandHandler::CommandHandler(Store &store, BlockingManager &blocking_manager, WatchManager &watch_manager)
+CommandHandler::CommandHandler(Store &store, BlockingManager &blocking_manager, WatchManager &watch_manager,
+  const ServerConfig& config)
     : tm_(watch_manager)
-    , registry_(build_registry(store, blocking_manager, watch_manager, tm_,
+    , registry_(build_registry(store, blocking_manager, watch_manager, tm_, config,
       [this](const Command::Type command_type) -> const ICommand * { return registry_.find(command_type); }))
-    , dispatcher_(registry_, tm_) {}
+    , dispatcher_(registry_, tm_)
+    , config_(config) {}
 
 auto CommandHandler::parse_command(const RespValue &request) -> Command {
   Command cmd;
