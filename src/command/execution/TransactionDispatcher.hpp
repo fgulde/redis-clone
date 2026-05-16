@@ -7,10 +7,10 @@
 #include <asio.hpp>
 #include <functional>
 #include <string>
-#include "Command.hpp"
-#include "CommandRegistry.hpp"
+#include "../core/Command.hpp"
+#include "../core/CommandRegistry.hpp"
 #include "TransactionManager.hpp"
-#include "../resp/RespValue.hpp"
+#include "../../resp/RespValue.hpp"
 
 /**
  * @brief TransactionDispatcher is responsible for deciding whether to execute a command

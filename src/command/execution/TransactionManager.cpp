@@ -2,8 +2,8 @@
 // Created by fguld on 5/6/2026.
 //
 
-#include "TransactionManager.hpp"
-#include "../state/WatchManager.hpp"
+#include "./TransactionManager.hpp"
+#include "../../state/WatchManager.hpp"
 
 TransactionManager::~TransactionManager() {
     clear_watches();

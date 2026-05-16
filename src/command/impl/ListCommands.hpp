@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../ICommand.hpp"
+#include "../core/ICommand.hpp"
 #include "../../store/Store.hpp"
 #include "../../state/BlockingManager.hpp"
 #include "../../state/WatchManager.hpp"

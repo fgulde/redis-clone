@@ -22,26 +22,26 @@ enable_testing() # Enable CTest support
 # Contains all business logic, reusable by both the main app and tests.
 # ==============================================================================
 add_library(redis_lib STATIC
-        src/command/CommandHandler.cpp
-        src/command/CommandHandler.hpp
-        src/command/CommandRegistry.cpp
-        src/command/CommandRegistry.hpp
-        src/command/TransactionDispatcher.cpp
-        src/command/TransactionDispatcher.hpp
-        src/command/ICommand.hpp
+        src/command/execution/CommandHandler.cpp
+        src/command/execution/CommandHandler.hpp
+        src/command/core/CommandRegistry.cpp
+        src/command/core/CommandRegistry.hpp
+        src/command/execution/TransactionDispatcher.cpp
+        src/command/execution/TransactionDispatcher.hpp
+        src/command/core/ICommand.hpp
         src/util/CommandUtils.hpp
-        src/command/commands/BasicCommands.cpp
-        src/command/commands/BasicCommands.hpp
-        src/command/commands/ListCommands.cpp
-        src/command/commands/ListCommands.hpp
-        src/command/commands/StreamCommands.cpp
-        src/command/commands/StreamCommands.hpp
-        src/command/commands/WatchCommands.cpp
-        src/command/commands/WatchCommands.hpp
-        src/command/commands/TransactionCommands.cpp
-        src/command/commands/TransactionCommands.hpp
-        src/command/TransactionManager.cpp
-        src/command/TransactionManager.hpp
+        src/command/impl/BasicCommands.cpp
+        src/command/impl/BasicCommands.hpp
+        src/command/impl/ListCommands.cpp
+        src/command/impl/ListCommands.hpp
+        src/command/impl/StreamCommands.cpp
+        src/command/impl/StreamCommands.hpp
+        src/command/impl/WatchCommands.cpp
+        src/command/impl/WatchCommands.hpp
+        src/command/impl/TransactionCommands.cpp
+        src/command/impl/TransactionCommands.hpp
+        src/command/execution/TransactionManager.cpp
+        src/command/execution/TransactionManager.hpp
         src/state/WatchManager.cpp
         src/state/WatchManager.hpp
         src/net/Connection.cpp
@@ -59,7 +59,7 @@ add_library(redis_lib STATIC
         src/store/types/StreamIdUtils.hpp
         src/resp/RespParser.cpp
         src/resp/RespParser.hpp
-        src/command/Command.hpp
+        src/command/core/Command.hpp
         src/util/StringUtils.hpp
         src/resp/RespValue.hpp
         src/store/StoreValue.hpp

@@ -2,12 +2,12 @@
 // Created by fguld on 4/29/2026.
 //
 
-#include "CommandRegistry.hpp"
-#include "commands/BasicCommands.hpp"
-#include "commands/ListCommands.hpp"
-#include "commands/StreamCommands.hpp"
-#include "commands/WatchCommands.hpp"
-#include "commands/TransactionCommands.hpp"
+#include "./CommandRegistry.hpp"
+#include "../impl/BasicCommands.hpp"
+#include "../impl/ListCommands.hpp"
+#include "../impl/StreamCommands.hpp"
+#include "../impl/WatchCommands.hpp"
+#include "../impl/TransactionCommands.hpp"
 
 void CommandRegistry::register_command(const Command::Type type, std::unique_ptr<ICommand> command) {
   commands_[type] = std::move(command);

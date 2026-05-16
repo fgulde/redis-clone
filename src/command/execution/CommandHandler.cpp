@@ -2,7 +2,7 @@
 // Created by fguld on 4/10/2026.
 //
 
-#include "CommandHandler.hpp"
+#include "./CommandHandler.hpp"
 #include <vector>
 #include <functional>
 

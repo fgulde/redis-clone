@@ -2,7 +2,7 @@
 // Created by fguld on 5/6/2026.
 //
 
-#include "TransactionDispatcher.hpp"
+#include "./TransactionDispatcher.hpp"
 #include <format>
 
 TransactionDispatcher::TransactionDispatcher(const CommandRegistry& registry, TransactionManager& transaction_manager)

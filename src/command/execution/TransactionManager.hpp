@@ -8,8 +8,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "../resp/RespValue.hpp"
-#include "../state/WatchManager.hpp"
+#include "../../resp/RespValue.hpp"
+#include "../../state/WatchManager.hpp"
 
 /**
  * @brief Manages the transaction state for a single connection.

@@ -7,11 +7,11 @@
 #include <asio.hpp>
 #include <string>
 
-#include "CommandRegistry.hpp"
+#include "../core/CommandRegistry.hpp"
 #include "TransactionDispatcher.hpp"
-#include "../store/Store.hpp"
-#include "../state/BlockingManager.hpp"
-#include "../state/WatchManager.hpp"
+#include "../../store/Store.hpp"
+#include "../../state/BlockingManager.hpp"
+#include "../../state/WatchManager.hpp"
 #include "TransactionManager.hpp"
 
 /**

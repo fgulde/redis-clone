@@ -8,7 +8,7 @@
 #include <optional>
 #include <format>
 #include <chrono>
-#include "../command/Command.hpp"
+#include "../command/core/Command.hpp"
 #include "StringUtils.hpp"
 
 /**

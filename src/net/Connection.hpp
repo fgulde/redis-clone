@@ -5,7 +5,7 @@
 #pragma once
 #include <asio.hpp>
 #include <memory>
-#include "../command/CommandHandler.hpp"
+#include "../command/execution/CommandHandler.hpp"
 #include "../state/BlockingManager.hpp"
 #include "../state/WatchManager.hpp"
 #include "../resp/RespParser.hpp"

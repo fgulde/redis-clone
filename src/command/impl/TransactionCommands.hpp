@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../ICommand.hpp"
-#include "../TransactionManager.hpp"
+#include "../core/ICommand.hpp"
+#include "../execution/TransactionManager.hpp"
 #include <functional>
 
 /**

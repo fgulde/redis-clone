@@ -6,7 +6,7 @@
 // without starting a server or network connection.
 
 #include <gtest/gtest.h>
-#include "command/CommandHandler.hpp"
+#include "../../src/command/execution/CommandHandler.hpp"
 #include "state/BlockingManager.hpp"
 #include "resp/RespValue.hpp"
 
