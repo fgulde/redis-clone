@@ -5,8 +5,8 @@
 #include <vector>
 #include <unordered_map>
 #include <expected>
-#include "StoreValue.hpp"
-#include "types/Stream.hpp"
+#include "../core/StoreValue.hpp"
+#include "../types/Stream.hpp"
 
 class StreamStore {
 public:
@@ -19,3 +19,4 @@ public:
 private:
   std::unordered_map<std::string, StoreValue>& data_;
 };
+

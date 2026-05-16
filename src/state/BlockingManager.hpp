@@ -9,7 +9,7 @@
 #include <deque>
 #include <functional>
 
-#include "../store/Store.hpp"
+#include "../store/core/Store.hpp"
 
 template<typename CallbackType>
 class BlockingRegistry {

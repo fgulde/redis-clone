@@ -3,7 +3,7 @@
 //
 
 #include <gtest/gtest.h>
-#include "../../src/store/Store.hpp"
+#include "../../src/store/core/Store.hpp"
 #include <thread>
 #include <chrono>
 TEST(StoreTest, SetGetRoundTrip) {

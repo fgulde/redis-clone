@@ -1,5 +1,5 @@
 #include "StreamStore.hpp"
-#include "types/StreamIdUtils.hpp"
+#include "../types/StreamIdUtils.hpp"
 
 auto StreamStore::xadd(const std::string_view key, const StreamId stream_id
   , const std::vector<std::pair<std::string, std::string>>& fields) const -> std::expected<std::string, std::string> {
@@ -97,3 +97,4 @@ auto StreamStore::xread(const std::vector<std::string_view>& keys, const std::ve
 
   return result;
 }
+

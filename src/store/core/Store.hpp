@@ -10,10 +10,10 @@
 #include <expected>
 #include <chrono>
 #include "StoreValue.hpp"
-#include "types/Stream.hpp"
-#include "StringStore.hpp"
-#include "ListStore.hpp"
-#include "StreamStore.hpp"
+#include "../types/Stream.hpp"
+#include "../impl/StringStore.hpp"
+#include "../impl/ListStore.hpp"
+#include "../impl/StreamStore.hpp"
 
 class Store {
 public:

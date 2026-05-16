@@ -103,3 +103,4 @@ auto ListStore::lpop(const std::string_view key, const std::size_t count) const 
 
   return result;
 }
+

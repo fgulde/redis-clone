@@ -48,21 +48,22 @@ add_library(redis_lib STATIC
         src/net/Connection.hpp
         src/net/Server.cpp
         src/net/Server.hpp
-        src/store/Store.hpp
-        src/store/StringStore.cpp
-        src/store/StringStore.hpp
-        src/store/ListStore.cpp
-        src/store/ListStore.hpp
-        src/store/StreamStore.cpp
-        src/store/StreamStore.hpp
-        src/store/types/StreamIdUtils.cpp
-        src/store/types/StreamIdUtils.hpp
-        src/resp/RespParser.cpp
-        src/resp/RespParser.hpp
-        src/command/core/Command.hpp
-        src/util/StringUtils.hpp
-        src/resp/RespValue.hpp
-        src/store/StoreValue.hpp
+        src/store/core/Store.hpp
+        src/store/core/StoreValue.hpp
+         src/store/impl/StringStore.cpp
+         src/store/impl/StringStore.hpp
+         src/store/impl/ListStore.cpp
+         src/store/impl/ListStore.hpp
+         src/store/impl/StreamStore.cpp
+         src/store/impl/StreamStore.hpp
+         src/store/types/Stream.hpp
+         src/store/types/StreamIdUtils.cpp
+         src/store/types/StreamIdUtils.hpp
+         src/resp/RespParser.cpp
+         src/resp/RespParser.hpp
+         src/command/core/Command.hpp
+         src/util/StringUtils.hpp
+         src/resp/RespValue.hpp
         src/state/BlockingManager.cpp
         src/state/BlockingManager.hpp
 )

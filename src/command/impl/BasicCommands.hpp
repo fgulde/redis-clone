@@ -6,7 +6,7 @@
 
 #include "../core/ICommand.hpp"
 #include "../../state/WatchManager.hpp"
-#include "../../store/Store.hpp"
+#include "../../store/core/Store.hpp"
 
 /**
  * @brief Command to reply with PONG.

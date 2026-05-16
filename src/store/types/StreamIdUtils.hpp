@@ -2,7 +2,7 @@
 
 #include <string>
 #include <string_view>
-#include "../StoreValue.hpp"
+#include "../core/StoreValue.hpp"
 #include "Stream.hpp"
 
 namespace stream_utils {

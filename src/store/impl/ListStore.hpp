@@ -5,7 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <expected>
-#include "StoreValue.hpp"
+#include "../core/StoreValue.hpp"
 
 class ListStore {
 public:
@@ -20,3 +20,4 @@ public:
 private:
   std::unordered_map<std::string, StoreValue>& data_;
 };
+

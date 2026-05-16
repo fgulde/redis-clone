@@ -175,26 +175,30 @@ src/
 │   ├── WatchManager.hpp / .cpp       # Shared WATCH registry for all connections
 │   └── BlockingManager.hpp / .cpp    # Shared blocking registry for BLPOP / XREAD BLOCK
 ├── command/
-│   ├── ICommand.hpp                  # Pure-virtual command interface
-│   ├── CommandHandler.hpp / .cpp     # Routes requests via registry & dispatcher
-│   ├── CommandRegistry.hpp / .cpp    # Maps Command::Type → ICommand
-│   ├── TransactionDispatcher.hpp / .cpp
-│   ├── TransactionManager.hpp / .cpp
-│   └── commands/
-│       ├── BasicCommands.hpp / .cpp  # PING, ECHO, SET, GET, TYPE, INCR
-│       ├── ListCommands.hpp / .cpp   # RPUSH, LPUSH, LRANGE, LLEN, LPOP, BLPOP
-│       ├── StreamCommands.hpp / .cpp # XADD, XRANGE, XREAD
+│   ├── core/                          # Abstractions, registry, type definitions
+│   │   ├── ICommand.hpp               # Pure-virtual command interface
+│   │   ├── Command.hpp                # Command type enum + parsing
+│   │   └── CommandRegistry.hpp / .cpp # Maps Command::Type → ICommand
+│   ├── execution/                     # Per-connection execution engine
+│   │   ├── CommandHandler.hpp / .cpp  # Routes requests via registry & dispatcher
+│   │   ├── TransactionManager.hpp / .cpp
+│   │   └── TransactionDispatcher.hpp / .cpp # MULTI/EXEC execution
+│   └── impl/                          # Concrete command implementations
+│       ├── BasicCommands.hpp / .cpp   # PING, ECHO, SET, GET, TYPE, INCR
+│       ├── ListCommands.hpp / .cpp    # RPUSH, LPUSH, LRANGE, LLEN, LPOP, BLPOP
+│       ├── StreamCommands.hpp / .cpp  # XADD, XRANGE, XREAD
 │       ├── TransactionCommands.hpp / .cpp # MULTI, EXEC, DISCARD
-│       └── WatchCommands.hpp / .cpp  # WATCH, UNWATCH
+│       └── WatchCommands.hpp / .cpp   # WATCH, UNWATCH
 ├── store/
-│   ├── Store.hpp                     # Facade delegating to sub-stores
-│   ├── StoreValue.hpp                # std::variant<string, deque, Stream> + TTL
-│   ├── StringStore.hpp / .cpp
-│   ├── ListStore.hpp / .cpp
-│   ├── StreamStore.hpp / .cpp
-│   └── types/
-│       ├── Stream.hpp
-│       └── StreamIdUtils.hpp / .cpp
+│   ├── Store.hpp                      # Facade delegating to sub-stores
+│   ├── StoreValue.hpp                 # Value wrapper: std::variant<string, deque, Stream> + TTL
+│   ├── impl/                          # Store implementations (per data type)
+│   │   ├── StringStore.hpp / .cpp     # String operations
+│   │   ├── ListStore.hpp / .cpp       # List operations
+│   │   └── StreamStore.hpp / .cpp     # Stream operations
+│   └── types/                         # Domain-specific data types
+│       ├── Stream.hpp                 # Stream, StreamId, StreamRange, StreamEntry
+│       └── StreamIdUtils.hpp / .cpp   # Stream ID parsing and generation
 └── util/
     ├── Logger.hpp
     ├── StringUtils.hpp

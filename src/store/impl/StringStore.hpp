@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <expected>
 #include <chrono>
-#include "StoreValue.hpp"
+#include "../core/StoreValue.hpp"
 
 class StringStore {
 public:
@@ -21,3 +21,4 @@ public:
 private:
   std::unordered_map<std::string, StoreValue>& data_;
 };
+

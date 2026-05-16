@@ -66,3 +66,4 @@ auto StringStore::incr(const std::string_view key) const -> std::expected<long l
   *str = std::to_string(val);
   return val;
 }
+

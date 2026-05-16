@@ -10,7 +10,7 @@
 #include <memory>
 #include "Command.hpp"
 #include "./ICommand.hpp"
-#include "../../store/Store.hpp"
+#include "../../store/core/Store.hpp"
 #include "../../state/BlockingManager.hpp"
 #include "../../state/WatchManager.hpp"
 #include "../execution/TransactionManager.hpp"
