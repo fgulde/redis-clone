@@ -6,8 +6,8 @@
 #include "../impl/BasicCommands.hpp"
 #include "../impl/ListCommands.hpp"
 #include "../impl/StreamCommands.hpp"
-#include "../impl/WatchCommands.hpp"
 #include "../impl/TransactionCommands.hpp"
+#include "../impl/WatchCommands.hpp"
 
 void CommandRegistry::register_command(const Command::Type type, std::unique_ptr<ICommand> command) {
   commands_[type] = std::move(command);
@@ -21,12 +21,14 @@ auto CommandRegistry::find(const Command::Type type) const -> const ICommand* {
 }
 
 auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager, TransactionManager& transaction_manager, const ServerConfig& config,
+                   std::function<std::size_t()> get_connected_clients,
+                   std::function<std::size_t()> get_used_memory,
                    std::function<const ICommand*(Command::Type)> finder) -> CommandRegistry {
   CommandRegistry registry;
 
   // Basic Commands
   registry.register_command(Command::Type::Ping, std::make_unique<PingCommand>());
-  registry.register_command(Command::Type::Info, std::make_unique<InfoCommand>(config));
+  registry.register_command(Command::Type::Info, std::make_unique<InfoCommand>(config, std::move(get_connected_clients), std::move(get_used_memory)));
   registry.register_command(Command::Type::Echo, std::make_unique<EchoCommand>());
   registry.register_command(Command::Type::Set, std::make_unique<SetCommand>(store, watch_manager));
   registry.register_command(Command::Type::Get, std::make_unique<GetCommand>(store));

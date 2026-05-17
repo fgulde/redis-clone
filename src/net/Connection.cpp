@@ -3,21 +3,20 @@
 //
 
 #include "Connection.hpp"
-#include "../util/Logger.hpp"
 
 #include <iostream>
+
+#include "../util/Logger.hpp"
 
 using namespace std::string_view_literals;
 
 Connection::Connection(tcp::socket socket, Store &store, BlockingManager &blocking_manager, WatchManager &watch_manager,
-  asio::io_context& store_ctx, const ServerConfig& config)
+  asio::io_context& store_ctx, const ServerConfig& config, std::function<void()> on_disconnect,
+  std::function<std::size_t()> get_connected_clients, std::function<std::size_t()> get_used_memory)
   : socket_(std::move(socket))
-  , store_(store)
-  , blocking_manager_(blocking_manager)
-  , watch_manager_(watch_manager)
-  , config_(config)
   , store_ctx_(store_ctx)
-  , handler_(store, blocking_manager, watch_manager, config) {}
+  , on_disconnect_(std::move(on_disconnect))
+  , handler_(store, blocking_manager, watch_manager, config, std::move(get_connected_clients), std::move(get_used_memory)) {}
 
 void Connection::start() {
   do_read();
@@ -34,11 +33,13 @@ void Connection::do_read() {
   [this, self](const asio::error_code error, std::size_t /*bytes_transferred*/) -> void {
   if (error == asio::error::eof) {
     Logger::log("Client disconnected");
+    if (on_disconnect_) { on_disconnect_(); }
     return;
   }
   if (error) {
     // Replaced std::println with std::cerr due to missing <print> support in CI
     std::cerr << "Read error: " << error.message() << '\n';
+    if (on_disconnect_) { on_disconnect_(); }
     return;
   }
 
@@ -64,7 +65,11 @@ void Connection::do_read() {
       handler_.handle(*command, store_ctx_.get_executor(), [this, self](const std::string& response) -> void {
         // Switch back to the network context to write the response
         asio::post(socket_.get_executor(), [this, self, response]() -> void {
-          asio::async_write(socket_, asio::buffer(response), [this, self](const asio::error_code&, std::size_t) -> void {
+          asio::async_write(socket_, asio::buffer(response), [this, self](const asio::error_code& write_error, std::size_t) -> void {
+            if (write_error) {
+              if (on_disconnect_) { on_disconnect_(); }
+              return;
+            }
             // Recursively call do_read to read the next request
             do_read();
           });

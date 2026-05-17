@@ -7,12 +7,12 @@
 #include <functional>
 
 CommandHandler::CommandHandler(Store &store, BlockingManager &blocking_manager, WatchManager &watch_manager,
-  const ServerConfig& config)
+  const ServerConfig& config, std::function<std::size_t()> get_connected_clients, std::function<std::size_t()> get_used_memory)
     : tm_(watch_manager)
     , registry_(build_registry(store, blocking_manager, watch_manager, tm_, config,
+      std::move(get_connected_clients), std::move(get_used_memory),
       [this](const Command::Type command_type) -> const ICommand * { return registry_.find(command_type); }))
-    , dispatcher_(registry_, tm_)
-    , config_(config) {}
+    , dispatcher_(registry_, tm_) {}
 
 auto CommandHandler::parse_command(const RespValue &request) -> Command {
   Command cmd;

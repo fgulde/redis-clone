@@ -14,6 +14,7 @@
 #include "../impl/StringStore.hpp"
 #include "../impl/ListStore.hpp"
 #include "../impl/StreamStore.hpp"
+#include "../../util/MemoryEstimator.hpp"
 
 class Store {
 public:
@@ -159,6 +160,14 @@ public:
    */
   auto incr(const std::string_view key) const -> std::expected<long long, std::string> {
     return string_store_.incr(key);
+  }
+
+  /**
+   * @brief Returns an approximate in-memory size of the current dataset.
+   * @note This is intentionally a lightweight estimate for INFO used_memory.
+   */
+  [[nodiscard]] auto approximate_memory_usage() const -> std::size_t {
+    return memory_estimator::MemoryEstimator::estimate_dataset_size(data_);
   }
 
 private:

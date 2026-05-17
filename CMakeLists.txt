@@ -5,6 +5,23 @@ cmake_minimum_required(VERSION 3.13)
 
 project(redis-starter-cpp)
 
+execute_process(
+        COMMAND git describe --tags --abbrev=0
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_TAG
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+)
+if(NOT GIT_TAG)
+    set(GIT_TAG "5.0.0-dev")
+endif()
+
+configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/util/Version.hpp.in
+        ${CMAKE_CURRENT_BINARY_DIR}/src/util/Version.hpp
+        @ONLY
+)
+
 # Ensure pthread is preferred for thread support (important for Linux)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
@@ -85,6 +102,7 @@ target_compile_options(redis_lib PRIVATE
 )
 
 target_include_directories(redis_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(redis_lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/src)
 target_link_libraries(redis_lib PUBLIC
         asio::asio
         Threads::Threads
@@ -139,6 +157,7 @@ set_target_properties(redis_tests PROPERTIES
 target_include_directories(redis_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/tests
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_BINARY_DIR}/src
 )
 
 # Link against the core library and GoogleTest

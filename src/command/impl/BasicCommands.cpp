@@ -3,29 +3,17 @@
 //
 
 #include <format>
+#include <functional>
 #include <string_view>
 #include <vector>
 
 #include "BasicCommands.hpp"
 #include "../../util/CommandUtils.hpp"
 #include "../../util/StringUtils.hpp"
+#include "util/Version.hpp"
 
 namespace {
-constexpr std::string_view kServerSection{
-    "# Server\r\n"
-    "redis_version:7.2.4\r\n"
-    "redis_mode:standalone\r\n"
-};
-
-constexpr std::string_view kClientsSection{
-    "# Clients\r\n"
-    "connected_clients:1\r\n"
-};
-
-constexpr std::string_view kMemorySection{
-    "# Memory\r\n"
-    "used_memory:859944\r\n"
-};
+constexpr std::string_view kRedisVersion{REDIS_VERSION};
 
 // Helper function to append sections to the INFO payload with proper formatting
 auto append_section(std::string& payload, const std::string_view section, const bool first_section) -> void {
@@ -35,9 +23,25 @@ auto append_section(std::string& payload, const std::string_view section, const 
   payload += section;
 }
 
+auto build_server_section(const ServerConfig& config) -> std::string {
+  std::string section = "# Server\r\n";
+  section += std::format("redis_version:{}\r\n", kRedisVersion);
+  (void)config;
+  section += "redis_mode:standalone\r\n";
+  return section;
+}
+
+auto build_clients_section(const std::function<std::size_t()>& get_connected_clients) -> std::string {
+  return std::format("# Clients\r\nconnected_clients:{}\r\n", get_connected_clients ? get_connected_clients() : 0);
+}
+
+auto build_memory_section(const std::function<std::size_t()>& get_used_memory) -> std::string {
+  return std::format("# Memory\r\nused_memory:{}\r\n", get_used_memory ? get_used_memory() : 0);
+}
+
 /**
  * @brief Builds the replication section dynamically based on server config.
- * @param config Server configuration with replication role.
+ * @param config Server configuration with a replication role.
  * @return A string containing the replication section.
  */
 auto build_replication_section(const ServerConfig& config) -> std::string {
@@ -64,18 +68,22 @@ auto build_replication_section(const ServerConfig& config) -> std::string {
  * @brief Builds the INFO command response payload based on the requested section.
  * @param section The section of INFO to include ("server", "clients", "memory" or "replication").
  * If empty or "all", includes all sections.
- * @param config Server configuration with replication role.
+ * @param config Server configuration with a replication role.
+ * @param get_connected_clients Function to retrieve the current number of connected clients.
+ * @param get_used_memory Function to retrieve the current used memory in bytes.
  * @return A string containing the formatted INFO response payload.
  */
-auto build_info_payload(const std::string_view section, const ServerConfig& config) -> std::string {
+auto build_info_payload(const std::string_view section, const ServerConfig& config,
+  const std::function<std::size_t()>& get_connected_clients,
+  const std::function<std::size_t()>& get_used_memory) -> std::string {
   const auto normalized_section = string_utils::lowercase(section);
 
   // Helper lambda to append sections to the payload
   const auto add_all_sections = [&]() -> std::string {
     std::string payload;
-    append_section(payload, kServerSection, true);
-    append_section(payload, kClientsSection, false);
-    append_section(payload, kMemorySection, false);
+    append_section(payload, build_server_section(config), true);
+    append_section(payload, build_clients_section(get_connected_clients), false);
+    append_section(payload, build_memory_section(get_used_memory), false);
     append_section(payload, build_replication_section(config), false);
     return payload;
   };
@@ -84,9 +92,9 @@ auto build_info_payload(const std::string_view section, const ServerConfig& conf
     return add_all_sections();
   }
 
-  if (normalized_section == "server") { return std::string(kServerSection); }
-  if (normalized_section == "clients") { return std::string(kClientsSection); }
-  if (normalized_section == "memory") { return std::string(kMemorySection); }
+  if (normalized_section == "server") { return build_server_section(config); }
+  if (normalized_section == "clients") { return build_clients_section(get_connected_clients); }
+  if (normalized_section == "memory") { return build_memory_section(get_used_memory); }
   if (normalized_section == "replication") { return build_replication_section(config); }
 
   return {};
@@ -111,7 +119,9 @@ void InfoCommand::execute(const Command& cmd, const asio::any_io_executor& /*exe
     return;
   }
 
-  const auto payload = cmd.args.empty() ? build_info_payload({}, config_) : build_info_payload(cmd.args.at(0), config_);
+  const auto payload = cmd.args.empty()
+    ? build_info_payload({}, config_, get_connected_clients_, get_used_memory_)
+    : build_info_payload(cmd.args.at(0), config_, get_connected_clients_, get_used_memory_);
   on_reply(std::format("${}\r\n{}\r\n", payload.size(), payload));
 }
 

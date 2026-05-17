@@ -22,7 +22,21 @@ void Server::do_accept() {
     [this](const asio::error_code error, tcp::socket socket) -> void {
       if (!error) {
         Logger::log("Client connected");
-        std::make_shared<Connection>(std::move(socket), store_, blocking_manager_, watch_manager_, store_ctx_, config_)->start();
+
+        // Define the on_disconnect callback to decrement the connected clients count when a client disconnects
+        auto on_disconnect = [this]() -> void {
+          connected_clients_.fetch_sub(1);
+        };
+        // Capture the current value of connected clients and used memory for INFO command responses
+        auto get_connected_clients = [this]() -> std::size_t { return connected_clients_.load(); };
+        // Capture the current memory usage for INFO command responses
+        auto get_used_memory = [this]() -> std::size_t { return store_.approximate_memory_usage(); };
+
+        // Create a new Connection object for the accepted client and start it
+        const auto connection = std::make_shared<Connection>(std::move(socket), store_, blocking_manager_, watch_manager_, store_ctx_, config_,
+          std::move(on_disconnect), std::move(get_connected_clients), std::move(get_used_memory));
+        connection->start();
+        connected_clients_.fetch_add(1);
       } else {
         Logger::log("Accept error: {}", error.message());
       }

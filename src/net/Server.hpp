@@ -4,11 +4,12 @@
 
 #pragma once
 #include <asio.hpp>
+#include <atomic>
 
-#include "../store/core/Store.hpp"
 #include "../state/BlockingManager.hpp"
-#include "../state/WatchManager.hpp"
 #include "../state/ServerConfig.hpp"
+#include "../state/WatchManager.hpp"
+#include "../store/core/Store.hpp"
 
 using asio::ip::tcp;
 
@@ -35,6 +36,7 @@ private:
   Store store_; ///< Shared store for all connections
   BlockingManager blocking_manager_; ///< Shared blocking manager for all connections
   WatchManager watch_manager_; ///< Shared watch manager for all connections
+  std::atomic<std::size_t> connected_clients_{0}; ///< Live number of connected clients
   asio::io_context& network_ctx_; ///< Reference to the network io_context
   asio::io_context& store_ctx_; ///< Reference to the store io_context
   ServerConfig config_; ///< Server configuration including the replication role

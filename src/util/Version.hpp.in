@@ -1,0 +1,8 @@
+//
+// Created by CMake at build time - do not edit manually.
+//
+
+#pragma once
+
+#define REDIS_VERSION "@GIT_TAG@"
+

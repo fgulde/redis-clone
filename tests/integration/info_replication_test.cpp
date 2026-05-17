@@ -10,6 +10,9 @@
 #include "../../src/state/BlockingManager.hpp"
 #include "../../src/state/ServerConfig.hpp"
 #include "../../src/resp/RespValue.hpp"
+#include "util/Version.hpp"
+#include "../helpers/test_client.hpp"
+#include "../helpers/test_server.hpp"
 
 namespace {
     class InfoReplicationTest : public ::testing::Test {
@@ -103,6 +106,24 @@ TEST_F(InfoReplicationReplicaTest, InfoReplicationReplicaReturnsRoleSlave) {
 
     const std::regex replid_pattern{R"(master_replid:([A-Za-z0-9]{40})\r\n)"};
     EXPECT_TRUE(std::regex_search(response, replid_pattern));
+}
+
+TEST_F(RedisIntegrationTest, InfoReportsDynamicClientsAndMemory) {
+    TestClient client(server().port());
+
+    EXPECT_EQ(client.command("SET", "live-key", "live-value"), "+OK\r\n");
+
+    const auto response = client.command("INFO");
+
+    ASSERT_FALSE(response.empty());
+    EXPECT_NE(response.find(std::string("redis_version:") + REDIS_VERSION + "\r\n"), std::string::npos);
+    EXPECT_NE(response.find("redis_mode:standalone\r\n"), std::string::npos);
+    EXPECT_NE(response.find("connected_clients:1\r\n"), std::string::npos);
+
+    const std::regex used_memory_pattern{R"(used_memory:([0-9]+)\r\n)"};
+    std::smatch match;
+    ASSERT_TRUE(std::regex_search(response, match, used_memory_pattern));
+    EXPECT_GT(std::stoull(match[1].str()), 0ULL);
 }
 
 

@@ -3,7 +3,9 @@
 //
 
 #include <gtest/gtest.h>
+
 #include "../../src/command/core/Command.hpp"
+
 TEST(CommandTest, ParseType) {
     EXPECT_EQ(Command::parse_type("ping"), Command::Type::Ping);
     EXPECT_EQ(Command::parse_type("info"), Command::Type::Info);

@@ -5,12 +5,14 @@
 // Verifies correct RESP2 responses for each command type
 // without starting a server or network connection.
 
-#include <gtest/gtest.h>
-#include <string>
 #include <regex>
+#include <string>
+#include <gtest/gtest.h>
+
 #include "../../src/command/execution/CommandHandler.hpp"
-#include "state/BlockingManager.hpp"
 #include "resp/RespValue.hpp"
+#include "state/BlockingManager.hpp"
+#include "util/Version.hpp"
 
 namespace {
     class CommandHandlerTest : public ::testing::Test {
@@ -43,7 +45,7 @@ namespace {
         Store store;
         BlockingManager blocking_manager;
         WatchManager watch_manager;
-        CommandHandler handler{store, blocking_manager, watch_manager};
+        CommandHandler handler{store, blocking_manager, watch_manager, ServerConfig::master(), []() -> std::size_t { return 7; }, []() -> std::size_t { return 12345; }};
         asio::io_context io_context;
     };
 }
@@ -62,8 +64,10 @@ TEST_F(CommandHandlerTest, InfoReturnsAllSectionsByDefault) {
     ASSERT_FALSE(response.empty());
     EXPECT_EQ(response.front(), '$');
     EXPECT_NE(response.find("# Server\r\n"), std::string::npos);
-    EXPECT_NE(response.find("# Clients\r\n"), std::string::npos);
-    EXPECT_NE(response.find("# Memory\r\n"), std::string::npos);
+    EXPECT_NE(response.find(std::string("redis_version:") + REDIS_VERSION + "\r\n"), std::string::npos);
+    EXPECT_NE(response.find("redis_mode:standalone\r\n"), std::string::npos);
+    EXPECT_NE(response.find("# Clients\r\nconnected_clients:7\r\n"), std::string::npos);
+    EXPECT_NE(response.find("# Memory\r\nused_memory:12345\r\n"), std::string::npos);
     EXPECT_NE(response.find("# Replication\r\n"), std::string::npos);
 }
 

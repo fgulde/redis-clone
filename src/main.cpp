@@ -14,7 +14,7 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
 
   constexpr int default_port{ 6379 };
   int port { default_port };
-  ServerConfig config { ServerConfig::master() };
+  ServerConfig config = ServerConfig::master();
 
   // Check environment variable first (e.g., for test configuration), then command-line arguments
   for (char* const* env = envp; *env != nullptr; env = std::next(env)) {
@@ -34,13 +34,12 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
     if (const std::string_view arg(*it); arg == "--port" && std::next(it) != parse_args.end()) {
       std::string_view const port_str(*++it);
 
-      // Parse the port number using std::from_chars for robust error handling
       if (auto [ptr, ec] = std::from_chars(port_str.data(), port_str.data() + port_str.size(), port);
         ec != std::errc()) {
         std::cerr << "Invalid port argument: '" << port_str << "'\n";
       }
     } else if (arg == "--replicaof" && std::next(it) != parse_args.end()) {
-      // Parse the replicaof argument (expects "<MASTER_HOST> <MASTER_PORT>" format)
+      // Parse the replicaof argument (expects "host port" format)
       const std::string host(*++it);
       if (std::next(it) != parse_args.end()) {
         const std::string replica_port(*++it);

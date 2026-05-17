@@ -20,10 +20,6 @@ struct ServerConfig {
   long long master_repl_offset{0}; ///< Replication offset used by INFO replication
 
 private:
-  /**
-   * @brief Generates a random replication ID for the master server.
-   * @return A random 40-character string consisting of digits and letters.
-   */
   static auto generate_replid() -> std::string {
     static constexpr std::string_view chars{"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"};
 
@@ -59,7 +55,7 @@ public:
 
   /**
    * @brief Create a master config (default).
-   * @return ServerConfig with a master role.
+   * @return ServerConfig with master role.
    */
   static auto master() -> ServerConfig {
     return ServerConfig{.role = Role::Master, .replicaof = std::nullopt, .master_replid = generate_replid(), .master_repl_offset = 0};

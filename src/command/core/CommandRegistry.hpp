@@ -8,6 +8,7 @@
 
 #include <unordered_map>
 #include <memory>
+#include <functional>
 #include "Command.hpp"
 #include "./ICommand.hpp"
 #include "../../store/core/Store.hpp"
@@ -15,7 +16,6 @@
 #include "../../state/WatchManager.hpp"
 #include "../../state/ServerConfig.hpp"
 #include "../execution/TransactionManager.hpp"
-#include <functional>
 
 /**
  * @brief Registry for all executable commands.
@@ -50,10 +50,14 @@ private:
  * @param blocking_manager Reference to the blocking manager.
  * @param watch_manager Reference to the watch manager.
  * @param transaction_manager Reference to the transaction manager.
- * @param config Server configuration (replication role, etc).
+ * @param config Server configuration (replication role, etc.).
+ * @param get_connected_clients Optional function to get the current number of connected clients (used for INFO command).
+ * @param get_used_memory Optional function to get the current used memory in bytes (used for
  * @param finder Function to find other commands (needed for EXEC).
  * @return A fully populated CommandRegistry.
  */
 auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager,
-  TransactionManager& transaction_manager, const ServerConfig& config,
-                   std::function<const ICommand*(Command::Type)> finder) -> CommandRegistry;
+                    TransactionManager& transaction_manager, const ServerConfig& config,
+                    std::function<std::size_t()> get_connected_clients = {},
+                    std::function<std::size_t()> get_used_memory = {},
+                    std::function<const ICommand*(Command::Type)> finder = {}) -> CommandRegistry;

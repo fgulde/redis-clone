@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include <functional>
 #include <utility>
-#include "../core/ICommand.hpp"
-#include "../../state/WatchManager.hpp"
+
 #include "../../state/ServerConfig.hpp"
+#include "../../state/WatchManager.hpp"
 #include "../../store/core/Store.hpp"
+#include "../core/ICommand.hpp"
 
 /**
  * @brief Command to reply with PONG.
@@ -24,11 +26,18 @@ public:
  */
 class InfoCommand : public ICommand {
 public:
-  explicit InfoCommand(ServerConfig config) : config_(std::move(config)) {}
+  explicit InfoCommand(ServerConfig config,
+    std::function<std::size_t()> get_connected_clients = {},
+    std::function<std::size_t()> get_used_memory = {})
+      : config_(std::move(config))
+      , get_connected_clients_(std::move(get_connected_clients))
+      , get_used_memory_(std::move(get_used_memory)) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
   ServerConfig config_;
+  std::function<std::size_t()> get_connected_clients_;
+  std::function<std::size_t()> get_used_memory_;
 };
 
 /**
