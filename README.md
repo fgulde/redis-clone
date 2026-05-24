@@ -61,6 +61,7 @@ This project reimplements core Redis internals as an exercise in systems program
 ## Tech Stack
 - **Language:** C++23
 - **Build System:** CMake
+- **Task Runner:** just
 - **Package Management:** vcpkg
 - **Async Networking:** Asio (standalone)
 - **Testing:** Google Test
@@ -71,10 +72,23 @@ This project reimplements core Redis internals as an exercise in systems program
 
 ## Quick Start
 
-**Build and run:**
+**Build and run with `just` (recommended):**
+```bash
+just build
+just run
+just run -- --port 6380
+```
+
+**Run the test suite:**
+```bash
+just test
+```
+
+**Using shell wrappers:**
 ```bash
 ./program.sh
 ./program.sh --port 6380
+./run_tests.sh
 ```
 
 **Connect with any Redis client:**
@@ -83,10 +97,6 @@ redis-cli ping
 redis-cli -p 6379
 ```
 
-**Run the test suite:**
-```bash
-./run_tests.sh
-```
 
 ---
 
