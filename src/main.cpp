@@ -7,6 +7,7 @@
 #include <vector>
 #include "net/Server.hpp"
 #include "state/ServerConfig.hpp"
+#include "replication/ReplicationManager.hpp"
 
 auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easily-swappable-parameters)
   std::cout << std::unitbuf;
@@ -43,7 +44,7 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
       const std::string host(*++it);
       if (std::next(it) != parse_args.end()) {
         const std::string replica_port(*++it);
-        config = ServerConfig::replica(host + " " + replica_port);
+        config = ServerConfig::replica(std::format("{} {}", host, replica_port));
       } else {
         std::cerr << "Invalid --replicaof argument: expected 'host port'\n";
       }
@@ -56,6 +57,10 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
   Server server(network_ctx, port, store_ctx, config);
 
   server.run();
+
+  // Start the replication manager if configured as a replica
+  ReplicationManager replication_manager(network_ctx, config, static_cast<unsigned short>(port));
+  replication_manager.start(); // This will attempt to connect to the master if replicaof is configured, otherwise it will do nothing
 
   // Replaced std::println with std::cout due to missing <print> support in CI
   std::cout << "Server is running on port " << port << "...\n";

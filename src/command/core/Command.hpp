@@ -37,6 +37,8 @@ struct Command {
     Unwatch,
     Exec,
     Discard,
+    Replconf,
+    Psync,
     Unknown
   };
 
@@ -73,6 +75,8 @@ struct Command {
     if (compareStrings(name, "unwatch")) { return Type::Unwatch; }
     if (compareStrings(name, "exec")) { return Type::Exec; }
     if (compareStrings(name, "discard")) { return Type::Discard; }
+    if (compareStrings(name, "replconf")) { return Type::Replconf; }
+    if (compareStrings(name, "psync")) { return Type::Psync; }
     return Type::Unknown;
   }
 };

@@ -8,6 +8,7 @@
 #include "../impl/StreamCommands.hpp"
 #include "../impl/TransactionCommands.hpp"
 #include "../impl/WatchCommands.hpp"
+#include "../impl/ReplicationCommands.hpp"
 
 void CommandRegistry::register_command(const Command::Type type, std::unique_ptr<ICommand> command) {
   commands_[type] = std::move(command);
@@ -56,6 +57,10 @@ auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManage
   registry.register_command(Command::Type::Multi, std::make_unique<MultiCommand>(transaction_manager));
   registry.register_command(Command::Type::Exec, std::make_unique<ExecCommand>(transaction_manager, std::move(finder)));
   registry.register_command(Command::Type::Discard, std::make_unique<DiscardCommand>(transaction_manager));
+
+  // Replication Commands
+  registry.register_command(Command::Type::Replconf, std::make_unique<ReplconfCommand>());
+  registry.register_command(Command::Type::Psync, std::make_unique<PsyncCommand>(config));
 
   return registry;
 }

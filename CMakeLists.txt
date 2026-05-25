@@ -57,6 +57,8 @@ add_library(redis_lib STATIC
         src/command/impl/WatchCommands.hpp
         src/command/impl/TransactionCommands.cpp
         src/command/impl/TransactionCommands.hpp
+        src/command/impl/ReplicationCommands.cpp
+        src/command/impl/ReplicationCommands.hpp
         src/command/execution/TransactionManager.cpp
         src/command/execution/TransactionManager.hpp
         src/state/WatchManager.cpp
@@ -66,6 +68,10 @@ add_library(redis_lib STATIC
         src/net/Connection.hpp
         src/net/Server.cpp
         src/net/Server.hpp
+        src/replication/ReplicationManager.cpp
+        src/replication/ReplicationManager.hpp
+        src/replication/ReplicationSession.cpp
+        src/replication/ReplicationSession.hpp
         src/store/core/Store.hpp
         src/store/core/StoreValue.hpp
          src/store/impl/StringStore.cpp

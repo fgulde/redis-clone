@@ -12,7 +12,7 @@
  * @brief Configuration for the Redis server, including replication settings.
  */
 struct ServerConfig {
-  enum class Role { Master, Slave };
+  enum class Role : std::uint8_t { Master, Slave };
 
   Role role{Role::Master}; ///< Server role (master or slave/replica)
   std::optional<std::string> replicaof; ///< Master address (host:port) if this server is a replica, std::nullopt if master
@@ -22,17 +22,18 @@ struct ServerConfig {
 private:
   static auto generate_replid() -> std::string {
     static constexpr std::string_view chars{"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"};
+    constexpr short id_length{40}; // Redis uses a 40-character hexadecimal string for replid
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    std::random_device random_device; // Non-deterministic random number generator
+    std::mt19937 gen(random_device()); // Mersenne Twister engine seeded with random_device
     std::uniform_int_distribution<std::size_t> dist(0, chars.size() - 1);
 
-    std::string id;
-    id.reserve(40);
-    for (int i = 0; i < 40; ++i) {
-      id.push_back(chars.at(dist(gen)));
+    std::string replication_id;
+    replication_id.reserve(id_length);
+    for (int i = 0; i < id_length; ++i) {
+      replication_id.push_back(chars.at(dist(gen))); // Randomly select a character from 'chars'
     }
-    return id;
+    return replication_id;
   }
 
 public:

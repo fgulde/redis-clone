@@ -84,7 +84,7 @@ just run -- --port 6380
 just test
 ```
 
-**Using shell wrappers:**
+**Legacy shell wrappers are still available:**
 ```bash
 ./program.sh
 ./program.sh --port 6380
