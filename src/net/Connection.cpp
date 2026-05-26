@@ -85,9 +85,7 @@ void Connection::do_read() {
     if (mode_ == ConnectionMode::Unknown) {
       if (parsed.type == Command::Type::Ping) {
         repl_state_ = ReplicationHandshakeState::Pinged;
-      } // The replication handshake requires two REPLCONF commands after the initial PING: first "REPLCONF listening-port <port>",
-      // then "REPLCONF capa <capabilities>". We track the number of REPLCONF commands received to ensure the correct sequence.
-        else if (parsed.type == Command::Type::Replconf) {
+      } else if (parsed.type == Command::Type::Replconf) {
         if (repl_state_ == ReplicationHandshakeState::None) {
           write_response("-ERR replication handshake not started\r\n");
           return;
@@ -105,8 +103,10 @@ void Connection::do_read() {
       }
     }
 
-    // Dispatch the command to the appropriate handler based on the connection mode (client or replication)
-    auto& handler = (mode_ == ConnectionMode::Replication) ? replication_handler_ : client_handler_;
+    const bool is_replication_command = parsed.type == Command::Type::Replconf || parsed.type == Command::Type::Psync;
+    auto& handler = (mode_ == ConnectionMode::Replication || (mode_ == ConnectionMode::Unknown && is_replication_command))
+      ? replication_handler_
+      : client_handler_;
     asio::post(store_ctx_, [this, self, command, &handler, write_response]() -> void {
       handler.handle(*command, store_ctx_.get_executor(), write_response);
     });
