@@ -45,7 +45,7 @@ private:
 };
 
 /**
- * @brief Factory function to build and populate a CommandRegistry with all supported commands.
+ * @brief Factory function to build and populate a CommandRegistry with all client commands.
  * @param store Reference to the data store.
  * @param blocking_manager Reference to the blocking manager.
  * @param watch_manager Reference to the watch manager.
@@ -56,8 +56,15 @@ private:
  * @param finder Function to find other commands (needed for EXEC).
  * @return A fully populated CommandRegistry.
  */
-auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager,
+auto build_client_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager,
                     TransactionManager& transaction_manager, const ServerConfig& config,
                     std::function<std::size_t()> get_connected_clients = {},
                     std::function<std::size_t()> get_used_memory = {},
                     std::function<const ICommand*(Command::Type)> finder = {}) -> CommandRegistry;
+
+/**
+ * @brief Factory function to build and populate a CommandRegistry with replication commands.
+ * @param config Server configuration (replication role, etc.).
+ * @return A CommandRegistry containing only replication-related commands.
+ */
+auto build_replication_registry(const ServerConfig& config) -> CommandRegistry;

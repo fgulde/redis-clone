@@ -14,7 +14,7 @@
 using asio::ip::tcp;
 
 /**
- * @brief Handles the replication handshake with the master.
+ * @brief Handles the replication handshake between a slave and the master.
  */
 class ReplicationSession : public std::enable_shared_from_this<ReplicationSession> {
 public:

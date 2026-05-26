@@ -22,10 +22,13 @@
  */
 class CommandHandler {
 public:
+  enum class RegistryKind : std::uint8_t { Client, Replication };
+
   explicit CommandHandler(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager,
     const ServerConfig& config = ServerConfig::master(),
     std::function<std::size_t()> get_connected_clients = {},
-    std::function<std::size_t()> get_used_memory = {});
+    std::function<std::size_t()> get_used_memory = {},
+    RegistryKind registry_kind = RegistryKind::Client);
 
   /**
    * @brief Handles a RESP request and produces a response string via an async callback.
@@ -47,7 +50,8 @@ public:
   static auto parse_command(const RespValue& request) -> Command;
 
 private:
-  TransactionManager tm_;
-  CommandRegistry registry_;
-  TransactionDispatcher dispatcher_;
+  RegistryKind registry_kind_; ///< Indicates whether this handler uses the client command registry or the replication command registry
+  TransactionManager tm_; ///< Manages transaction state for the connection, used by the TransactionDispatcher to determine if commands should be queued or executed immediately
+  CommandRegistry registry_; ///< Maps Command::Type to ICommand implementations for executing commands
+  TransactionDispatcher dispatcher_; ///< Responsible for dispatching commands to their implementations, handling transaction queuing logic when necessary
 };

@@ -79,4 +79,14 @@ struct Command {
     if (compareStrings(name, "psync")) { return Type::Psync; }
     return Type::Unknown;
   }
+
+  static auto is_replication_command(const Type type) -> bool {
+    switch (type) {
+      case Type::Replconf:
+      case Type::Psync:
+        return true;
+      default:
+        return false;
+    }
+  }
 };

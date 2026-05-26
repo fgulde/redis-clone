@@ -21,7 +21,7 @@ auto CommandRegistry::find(const Command::Type type) const -> const ICommand* {
   return nullptr;
 }
 
-auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager, TransactionManager& transaction_manager, const ServerConfig& config,
+auto build_client_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager, TransactionManager& transaction_manager, const ServerConfig& config,
                    std::function<std::size_t()> get_connected_clients,
                    std::function<std::size_t()> get_used_memory,
                    std::function<const ICommand*(Command::Type)> finder) -> CommandRegistry {
@@ -58,7 +58,13 @@ auto build_registry(Store& store, BlockingManager& blocking_manager, WatchManage
   registry.register_command(Command::Type::Exec, std::make_unique<ExecCommand>(transaction_manager, std::move(finder)));
   registry.register_command(Command::Type::Discard, std::make_unique<DiscardCommand>(transaction_manager));
 
-  // Replication Commands
+  return registry;
+}
+
+auto build_replication_registry(const ServerConfig& config) -> CommandRegistry {
+  CommandRegistry registry;
+
+  registry.register_command(Command::Type::Ping, std::make_unique<PingCommand>());
   registry.register_command(Command::Type::Replconf, std::make_unique<ReplconfCommand>());
   registry.register_command(Command::Type::Psync, std::make_unique<PsyncCommand>(config));
 
