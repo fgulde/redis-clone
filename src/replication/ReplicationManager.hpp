@@ -8,7 +8,10 @@
 #include <memory>
 #include <string>
 
+#include "../state/BlockingManager.hpp"
 #include "../state/ServerConfig.hpp"
+#include "../state/WatchManager.hpp"
+#include "../store/core/Store.hpp"
 
 using asio::ip::tcp;
 
@@ -19,27 +22,23 @@ class ReplicationSession;
  */
 class ReplicationManager {
 public:
-  ReplicationManager(asio::io_context& network_ctx, ServerConfig config, unsigned short listening_port);
+  ReplicationManager(asio::io_context& network_ctx, ServerConfig config, unsigned short listening_port,
+    Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager,
+    asio::io_context& store_ctx);
 
-  /**
-   * @brief Starts the replication manager by checking if the server is configured as a replica and, if so,
-   * initiating a connection to the master.
-   */
   void start();
 
 private:
-  /**
-   * @brief Asynchronously resolves the master's host and port, then attempts to connect. If successful,
-   * it creates a ReplicationSession to handle the replication handshake.
-   * @param host The master's hostname or IP address.
-   * @param port The master's port number as a string.
-   */
   void connect_to_master(const std::string& host, const std::string& port);
 
-  asio::io_context& network_ctx_; ///< Reference to the network io_context, used for asynchronous operations related to replication (e.g., connecting to master)
-  ServerConfig config_; ///< Server configuration, used to check if replication is enabled and to access replication settings
-  unsigned short listening_port_; ///< The port on which this server is listening to, used in the REPLCONF command to inform the master
-  tcp::resolver resolver_; ///< Used to resolve the master's hostname and port before connecting
-  std::shared_ptr<ReplicationSession> session_; ///< Manages the replication handshake and communication with the master once connected
+  asio::io_context& network_ctx_;
+  ServerConfig config_;
+  unsigned short listening_port_;
+  Store& store_;
+  BlockingManager& blocking_manager_;
+  WatchManager& watch_manager_;
+  asio::io_context& store_ctx_;
+  tcp::resolver resolver_;
+  std::shared_ptr<ReplicationSession> session_;
 };
 

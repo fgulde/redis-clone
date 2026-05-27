@@ -5,7 +5,9 @@
 #pragma once
 #include <asio.hpp>
 #include <atomic>
+#include <memory>
 
+#include "../replication/ReplicaRegistry.hpp"
 #include "../state/BlockingManager.hpp"
 #include "../state/ServerConfig.hpp"
 #include "../state/WatchManager.hpp"
@@ -22,13 +24,13 @@ using asio::ip::tcp;
 class Server {
 public:
   Server(asio::io_context& network_ctx, unsigned short port, asio::io_context& store_ctx,
-    const ServerConfig& config = ServerConfig::master());
+    ServerConfig  config = ServerConfig::master());
   void run(); /// Public wrapper method for calling do_accept()
 
-  /** @brief Returns the port number the server is listening to.
-   * @return The port number the server is listening to.
-   */
   auto port() const -> unsigned short { return acceptor_.local_endpoint().port(); }
+  auto store() -> auto& { return store_; }
+  auto blocking_manager() -> auto& { return blocking_manager_; }
+  auto watch_manager() -> auto& { return watch_manager_; }
 
 private:
   void do_accept();
@@ -36,6 +38,7 @@ private:
   Store store_; ///< Shared store for all connections
   BlockingManager blocking_manager_; ///< Shared blocking manager for all connections
   WatchManager watch_manager_; ///< Shared watch manager for all connections
+  std::shared_ptr<ReplicaRegistry> replica_registry_ = std::make_shared<ReplicaRegistry>();
   std::atomic<std::size_t> connected_clients_{0}; ///< Live number of connected clients
   asio::io_context& network_ctx_; ///< Reference to the network io_context
   asio::io_context& store_ctx_; ///< Reference to the store io_context

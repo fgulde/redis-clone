@@ -68,6 +68,8 @@ add_library(redis_lib STATIC
         src/net/Connection.hpp
         src/net/Server.cpp
         src/net/Server.hpp
+        src/replication/ReplicaRegistry.cpp
+        src/replication/ReplicaRegistry.hpp
         src/replication/ReplicationManager.cpp
         src/replication/ReplicationManager.hpp
         src/replication/ReplicationSession.cpp
@@ -150,6 +152,7 @@ add_executable(redis_tests
         tests/integration/transaction_test.cpp
         tests/integration/info_replication_test.cpp
         tests/integration/replication_handshake_test.cpp
+        tests/integration/replication_propagation_test.cpp
         tests/helpers/test_server.hpp
         tests/helpers/test_client.hpp
 )

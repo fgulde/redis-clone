@@ -89,4 +89,19 @@ struct Command {
         return false;
     }
   }
+
+  static auto is_write_command(const Type type) -> bool {
+    switch (type) {
+      case Type::Set:
+      case Type::Incr:
+      case Type::RPush:
+      case Type::LPush:
+      case Type::LPop:
+      case Type::BLPop:
+      case Type::XAdd:
+        return true;
+      default:
+        return false;
+    }
+  }
 };

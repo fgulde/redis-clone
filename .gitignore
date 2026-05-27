@@ -1048,3 +1048,5 @@ dkms.conf
 .vcpkg_installed/
 .codecrafters
 vcpkg_installed
+.claude
+CLAUDE.md

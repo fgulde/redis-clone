@@ -59,8 +59,9 @@ auto main(const int argc, char *argv[], char *envp[]) -> int { // NOLINT(*-easil
   server.run();
 
   // Start the replication manager if configured as a replica
-  ReplicationManager replication_manager(network_ctx, config, static_cast<unsigned short>(port));
-  replication_manager.start(); // This will attempt to connect to the master if replicaof is configured, otherwise it will do nothing
+  ReplicationManager replication_manager(network_ctx, config, static_cast<unsigned short>(port),
+    server.store(), server.blocking_manager(), server.watch_manager(), store_ctx);
+  replication_manager.start();
 
   // Replaced std::println with std::cout due to missing <print> support in CI
   std::cout << "Server is running on port " << port << "...\n";
