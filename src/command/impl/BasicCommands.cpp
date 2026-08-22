@@ -42,9 +42,10 @@ auto build_memory_section(const std::function<std::size_t()>& get_used_memory) -
 /**
  * @brief Builds the replication section dynamically based on server config.
  * @param config Server configuration with a replication role.
+ * @param replica_registry Optional registry providing the live master replication offset, when this server is a master.
  * @return A string containing the replication section.
  */
-auto build_replication_section(const ServerConfig& config) -> std::string {
+auto build_replication_section(const ServerConfig& config, const std::shared_ptr<ReplicaRegistry>& replica_registry) -> std::string {
   std::string section = "# Replication\r\n";
   section += std::format("role:{}\r\n", config.role_str());
 
@@ -52,8 +53,12 @@ auto build_replication_section(const ServerConfig& config) -> std::string {
     section += "connected_slaves:0\r\n";
   }
 
+  // Only a master's own propagation counter is meaningful here; a replica's sync progress against
+  // its own master lives in ReplicationSession and isn't wired into INFO yet.
+  const long long offset = (!config.is_replica() && replica_registry) ? replica_registry->master_offset() : config.master_repl_offset;
+
   section += std::format("master_replid:{}\r\n", config.master_replid);
-  section += std::format("master_repl_offset:{}\r\n", config.master_repl_offset);
+  section += std::format("master_repl_offset:{}\r\n", offset);
   section += "second_repl_offset:-1\r\n";
 
   section += "repl_backlog_active:0\r\n"
@@ -71,11 +76,13 @@ auto build_replication_section(const ServerConfig& config) -> std::string {
  * @param config Server configuration with a replication role.
  * @param get_connected_clients Function to retrieve the current number of connected clients.
  * @param get_used_memory Function to retrieve the current used memory in bytes.
+ * @param replica_registry Optional registry providing the live master replication offset.
  * @return A string containing the formatted INFO response payload.
  */
 auto build_info_payload(const std::string_view section, const ServerConfig& config,
   const std::function<std::size_t()>& get_connected_clients,
-  const std::function<std::size_t()>& get_used_memory) -> std::string {
+  const std::function<std::size_t()>& get_used_memory,
+  const std::shared_ptr<ReplicaRegistry>& replica_registry) -> std::string {
   const auto normalized_section = string_utils::lowercase(section);
 
   // Helper lambda to append sections to the payload
@@ -84,7 +91,7 @@ auto build_info_payload(const std::string_view section, const ServerConfig& conf
     append_section(payload, build_server_section(config), true);
     append_section(payload, build_clients_section(get_connected_clients), false);
     append_section(payload, build_memory_section(get_used_memory), false);
-    append_section(payload, build_replication_section(config), false);
+    append_section(payload, build_replication_section(config, replica_registry), false);
     return payload;
   };
 
@@ -95,7 +102,7 @@ auto build_info_payload(const std::string_view section, const ServerConfig& conf
   if (normalized_section == "server") { return build_server_section(config); }
   if (normalized_section == "clients") { return build_clients_section(get_connected_clients); }
   if (normalized_section == "memory") { return build_memory_section(get_used_memory); }
-  if (normalized_section == "replication") { return build_replication_section(config); }
+  if (normalized_section == "replication") { return build_replication_section(config, replica_registry); }
 
   return {};
 }
@@ -120,8 +127,8 @@ void InfoCommand::execute(const Command& cmd, const asio::any_io_executor& /*exe
   }
 
   const auto payload = cmd.args.empty()
-    ? build_info_payload({}, config_, get_connected_clients_, get_used_memory_)
-    : build_info_payload(cmd.args.at(0), config_, get_connected_clients_, get_used_memory_);
+    ? build_info_payload({}, config_, get_connected_clients_, get_used_memory_, replica_registry_)
+    : build_info_payload(cmd.args.at(0), config_, get_connected_clients_, get_used_memory_, replica_registry_);
   on_reply(std::format("${}\r\n{}\r\n", payload.size(), payload));
 }
 

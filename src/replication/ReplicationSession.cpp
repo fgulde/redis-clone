@@ -50,10 +50,26 @@ void ReplicationSession::send_psync() {
     self->read_reply([self](const RespValue& reply) -> void {
       if (reply.type == RespValue::Type::SimpleString) {
         Logger::log("Replica PSYNC reply: {}", reply.str);
+        self->parse_fullresync_offset(reply.str);
       }
       self->receive_rdb();
     });
   });
+}
+
+void ReplicationSession::parse_fullresync_offset(const std::string& reply) {
+  // Reply has syntax: FULLRESYNC <replid> <offset>, so offset is the last one
+  const auto space = reply.rfind(' ');
+  if (space == std::string::npos) { return; }
+
+  const std::string_view offset_part = std::string_view(reply).substr(space + 1);
+  const auto* const begin = offset_part.data();
+  const auto* const end = std::next(begin, static_cast<std::ptrdiff_t>(offset_part.size()));
+
+  std::size_t offset { 0 };
+  if (auto [ptr, ec] = std::from_chars(begin, end, offset); ec == std::errc{}) {
+    replica_offset_ = offset;
+  }
 }
 
 void ReplicationSession::receive_rdb() {
@@ -116,8 +132,8 @@ void ReplicationSession::receive_rdb_body(const std::size_t size) {
 }
 
 void ReplicationSession::receive_commands() {
-  // Drain every complete command already sitting in buf_ before touching the socket again — a
-  // single TCP read from the master can (and often does) contain more than one propagated command.
+  // Drain every complete command already sitting in buf_ before touching the socket again,
+  // a single TCP read from the master can (and often does) contain more than one propagated command.
   // Looping here (rather than recursing) keeps a burst of buffered commands from growing the call stack.
   while (try_process_one_buffered_command()) {}
 
@@ -144,6 +160,7 @@ auto ReplicationSession::try_process_one_buffered_command() -> bool {
   }
 
   buf_.consume(consumed);
+  replica_offset_ += consumed;
 
   // Execute without sending a reply back to the master
   auto cmd = std::make_shared<RespValue>(*command_opt);
@@ -158,18 +175,18 @@ void ReplicationSession::send_array(const std::vector<std::string>& parts, const
   auto payload = std::make_shared<std::string>(encode_array(parts));
   auto self = shared_from_this();
   asio::async_write(socket_, asio::buffer(*payload),
-                    [self, payload, on_sent](const asio::error_code error, std::size_t) -> void {
-                      // self/payload are captured only to stay alive until the write completes.
-                      static_cast<void>(self);
-                      static_cast<void>(payload);
-                      if (error) {
-                        Logger::log("Replica write error: {}", error.message());
-                        return;
-                      }
-                      if (on_sent) {
-                        on_sent();
-                      }
-                    });
+  [self, payload, on_sent](const asio::error_code error, std::size_t) -> void {
+      // self/payload are captured only to stay alive until the write completes.
+      static_cast<void>(self);
+      static_cast<void>(payload);
+      if (error) {
+        Logger::log("Replica write error: {}", error.message());
+        return;
+      }
+      if (on_sent) {
+        on_sent();
+      }
+  });
 }
 
 void ReplicationSession::read_reply(const std::function<void(const RespValue&)>& on_reply) {

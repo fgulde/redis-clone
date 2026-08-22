@@ -30,7 +30,7 @@ auto build_client_registry(Store& store, BlockingManager& blocking_manager, Watc
 
   // Basic Commands
   registry.register_command(Command::Type::Ping, std::make_unique<PingCommand>());
-  registry.register_command(Command::Type::Info, std::make_unique<InfoCommand>(config, std::move(get_connected_clients), std::move(get_used_memory)));
+  registry.register_command(Command::Type::Info, std::make_unique<InfoCommand>(config, std::move(get_connected_clients), std::move(get_used_memory), replica_registry));
   registry.register_command(Command::Type::Echo, std::make_unique<EchoCommand>());
   registry.register_command(Command::Type::Set, std::make_unique<SetCommand>(store, watch_manager));
   registry.register_command(Command::Type::Get, std::make_unique<GetCommand>(store));
@@ -62,12 +62,12 @@ auto build_client_registry(Store& store, BlockingManager& blocking_manager, Watc
   return registry;
 }
 
-auto build_replication_registry(const ServerConfig& config) -> CommandRegistry {
+auto build_replication_registry(const ServerConfig& config, std::shared_ptr<ReplicaRegistry> replica_registry) -> CommandRegistry {
   CommandRegistry registry;
 
   registry.register_command(Command::Type::Ping, std::make_unique<PingCommand>());
   registry.register_command(Command::Type::Replconf, std::make_unique<ReplconfCommand>());
-  registry.register_command(Command::Type::Psync, std::make_unique<PsyncCommand>(config));
+  registry.register_command(Command::Type::Psync, std::make_unique<PsyncCommand>(config, std::move(replica_registry)));
 
   return registry;
 }

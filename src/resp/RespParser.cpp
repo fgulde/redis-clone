@@ -158,7 +158,7 @@ auto RespParser::parse_bulk_string(const std::string_view input, std::size_t &po
   const auto line = read_line(input, pos);
   if (!line) { return std::nullopt; }
 
-  int length = 0;
+  int length { 0 };
   if (!parse_int(*line, length)) { return std::nullopt; }
   if (length < 0) {
     return RespValue{ .type=RespValue::Type::Null, .str={}, .elements={} };

@@ -20,7 +20,7 @@ Connection::Connection(tcp::socket socket, Store &store, BlockingManager &blocki
   , client_handler_(store, blocking_manager, watch_manager, config, std::move(get_connected_clients),
                     std::move(get_used_memory), CommandHandler::RegistryKind::Client, replica_registry)
   , replication_handler_(store, blocking_manager, watch_manager, config, {}, {},
-                         CommandHandler::RegistryKind::Replication)
+                         CommandHandler::RegistryKind::Replication, replica_registry)
   , replica_registry_(std::move(replica_registry)) {}
 
 void Connection::start() {
@@ -70,7 +70,7 @@ void Connection::do_read() {
     auto command = std::make_shared<RespValue>(std::move(*command_opt));
 
     auto write_response = [this, self](const std::string& response) -> void {
-      asio::post(socket_.get_executor(), [this, self, response]() -> void {
+      asio::post(socket_.get_executor(), [this, self, response] -> void {
         asio::async_write(socket_, asio::buffer(response),
           [this, self](const asio::error_code &write_error, std::size_t) -> void {
             if (write_error) {
@@ -112,7 +112,7 @@ void Connection::do_read() {
         if (replica_registry_ && !registered_as_replica_) {
           registered_as_replica_ = true;
           replica_id_ = replica_registry_->add([this, self](std::string data) -> void {
-            asio::post(socket_.get_executor(), [this, self, data = std::move(data)]() -> void {
+            asio::post(socket_.get_executor(), [this, self, data = std::move(data)] -> void {
               auto buf = std::make_shared<std::string>(data);
               asio::async_write(socket_, asio::buffer(*buf),
                 [self, buf](const asio::error_code &, std::size_t) -> void {
@@ -132,7 +132,7 @@ void Connection::do_read() {
 
     // Write-command propagation to replicas happens inside TransactionDispatcher, on the store thread — it's the
     // only place that reliably knows whether a command actually executed versus merely got queued in a MULTI block.
-    asio::post(store_ctx_, [this, self, command, &handler, write_response]() -> void {
+    asio::post(store_ctx_, [this, self, command, &handler, write_response] -> void {
       handler.handle(*command, store_ctx_.get_executor(), write_response);
     });
   }

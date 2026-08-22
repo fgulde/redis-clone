@@ -90,6 +90,19 @@ namespace {
         std::unique_ptr<TestServer> master_;
         std::unique_ptr<TestReplicaServer> replica_;
     };
+
+    /**
+     * @brief Extracts master_repl_offset from an "INFO replication" bulk-string reply.
+     */
+    auto master_repl_offset(TestClient& client) -> long long {
+        const auto response = client.command("INFO", "replication");
+        constexpr std::string_view field{"master_repl_offset:"};
+        const auto start = response.find(field);
+        if (start == std::string::npos) { return -1; }
+        const auto value_start = start + field.size();
+        const auto value_end = response.find("\r\n", value_start);
+        return std::stoll(response.substr(value_start, value_end - value_start));
+    }
 }
 
 TEST_F(ReplicationPropagationTest, SetOnMasterPropagatedToReplica) {
@@ -159,6 +172,23 @@ TEST_F(ReplicationPropagationTest, MultipleQueuedWritesInOneExecAllReachReplica)
     TestClient replica_client(replica().port());
     EXPECT_EQ(replica_client.command("GET", "txn-multi-1"), "$11\r\noverwritten\r\n");
     EXPECT_EQ(replica_client.command("GET", "txn-multi-2"), "$6\r\nsecond\r\n");
+}
+
+TEST_F(ReplicationPropagationTest, MasterReplOffsetAdvancesWithPropagatedWrites) {
+    TestClient master_client(master().port());
+    const auto initial_offset = master_repl_offset(master_client);
+
+    EXPECT_EQ(master_client.command("SET", "offset-key", "v1"), "+OK\r\n");
+    const auto after_one_write = master_repl_offset(master_client);
+    EXPECT_GT(after_one_write, initial_offset);
+
+    EXPECT_EQ(master_client.command("SET", "offset-key", "v2"), "+OK\r\n");
+    const auto after_two_writes = master_repl_offset(master_client);
+    EXPECT_GT(after_two_writes, after_one_write);
+
+    // Read-only commands must not advance the replication offset.
+    EXPECT_EQ(master_client.command("GET", "offset-key"), "$2\r\nv2\r\n");
+    EXPECT_EQ(master_repl_offset(master_client), after_two_writes);
 }
 
 TEST_F(ReplicationPropagationTest, ReadOnlyCommandsNotPropagated) {

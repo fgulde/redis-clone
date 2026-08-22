@@ -5,8 +5,10 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <utility>
 
+#include "../../replication/ReplicaRegistry.hpp"
 #include "../../state/ServerConfig.hpp"
 #include "../../state/WatchManager.hpp"
 #include "../../store/core/Store.hpp"
@@ -28,16 +30,19 @@ class InfoCommand : public ICommand {
 public:
   explicit InfoCommand(ServerConfig config,
     std::function<std::size_t()> get_connected_clients = {},
-    std::function<std::size_t()> get_used_memory = {})
+    std::function<std::size_t()> get_used_memory = {},
+    std::shared_ptr<ReplicaRegistry> replica_registry = {})
       : config_(std::move(config))
       , get_connected_clients_(std::move(get_connected_clients))
-      , get_used_memory_(std::move(get_used_memory)) {}
+      , get_used_memory_(std::move(get_used_memory))
+      , replica_registry_(std::move(replica_registry)) {}
   void execute(const Command& cmd, const asio::any_io_executor& executor,
                const std::function<void(std::string)>& on_reply) const override;
 private:
   ServerConfig config_;
   std::function<std::size_t()> get_connected_clients_;
   std::function<std::size_t()> get_used_memory_;
+  std::shared_ptr<ReplicaRegistry> replica_registry_; ///< Used to report the live master replication offset instead of the static config snapshot.
 };
 
 /**

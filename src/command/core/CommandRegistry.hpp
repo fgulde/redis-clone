@@ -68,6 +68,7 @@ auto build_client_registry(Store& store, BlockingManager& blocking_manager, Watc
 /**
  * @brief Factory function to build and populate a CommandRegistry with replication commands.
  * @param config Server configuration (replication role, etc.).
+ * @param replica_registry Optional registry, used by PSYNC to embed the live master replication offset in its reply.
  * @return A CommandRegistry containing only replication-related commands.
  */
-auto build_replication_registry(const ServerConfig& config) -> CommandRegistry;
+auto build_replication_registry(const ServerConfig& config, std::shared_ptr<ReplicaRegistry> replica_registry = {}) -> CommandRegistry;

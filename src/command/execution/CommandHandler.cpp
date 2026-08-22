@@ -12,7 +12,7 @@ CommandHandler::CommandHandler(Store &store, BlockingManager &blocking_manager, 
     : registry_kind_(registry_kind)
     , tm_(watch_manager)
     , registry_(registry_kind == RegistryKind::Replication
-        ? build_replication_registry(config)
+        ? build_replication_registry(config, replica_registry)
         : build_client_registry(store, blocking_manager, watch_manager, tm_, config,
             std::move(get_connected_clients), std::move(get_used_memory),
             [this](const Command::Type command_type) -> const ICommand * { return registry_.find(command_type); },

@@ -6,12 +6,12 @@
 
 #include <format>
 
-void ReplconfCommand::execute(const Command&, const asio::any_io_executor&,
+void ReplconfCommand::execute(const Command& /*cmd*/, const asio::any_io_executor& /*executor*/,
                               const std::function<void(std::string)>& on_reply) const {
   on_reply("+OK\r\n");
 }
 
-void PsyncCommand::execute(const Command& cmd, const asio::any_io_executor&,
+void PsyncCommand::execute(const Command& cmd, const asio::any_io_executor& /*executor*/,
                            const std::function<void(std::string)>& on_reply) const {
   if (cmd.args.size() < 2) {
     on_reply("-ERR wrong number of arguments for 'PSYNC' command\r\n");
@@ -27,7 +27,8 @@ void PsyncCommand::execute(const Command& cmd, const asio::any_io_executor&,
   rdb_payload.push_back(static_cast<char>(0xFF));
   rdb_payload.append(8, '\0');
 
-  std::string response = std::format("+FULLRESYNC {} 0\r\n${}\r\n", config_.master_replid, rdb_payload.size());
+  const long long offset = replica_registry_ ? replica_registry_->master_offset() : config_.master_repl_offset;
+  std::string response = std::format("+FULLRESYNC {} {}\r\n${}\r\n", config_.master_replid, offset, rdb_payload.size());
   response.append(rdb_payload);
   on_reply(response);
 }

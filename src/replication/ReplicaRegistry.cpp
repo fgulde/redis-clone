@@ -20,7 +20,13 @@ void ReplicaRegistry::remove(const ReplicaId replica_id) {
 
 void ReplicaRegistry::propagate(const std::string& data) const {
   std::scoped_lock const lock(mu_);
+  master_offset_ += static_cast<long long>(data.size());
   for (const auto &function : replicas_ | std::views::values) {
     function(data);
   }
+}
+
+auto ReplicaRegistry::master_offset() const -> long long {
+  std::scoped_lock const lock(mu_);
+  return master_offset_;
 }

@@ -35,6 +35,10 @@ private:
   void send_replconf_capa();
   void send_psync();
 
+  /// Extracts the trailing offset from a "FULLRESYNC <replid> <offset>" reply and uses it as the
+  /// starting point for replica_offset_, so this replica's counter stays comparable to the master's.
+  void parse_fullresync_offset(const std::string& reply);
+
   /// After PSYNC: reads and discards the RDB bulk-string header ($N\r\n), then the N-byte body.
   void receive_rdb();
   void receive_rdb_body(std::size_t size);
@@ -53,11 +57,16 @@ private:
 
   static auto encode_array(const std::vector<std::string>& parts) -> std::string;
 
+  /// @return Bytes consumed from the master's command stream so far (seeded from FULLRESYNC's offset).
+  /// Mirrors the master's master_repl_offset; will back REPLCONF ACK once that's implemented.
+  [[nodiscard]] auto offset() const -> std::size_t { return replica_offset_; }
+
   tcp::socket socket_;
   unsigned short listening_port_;
   asio::io_context& store_ctx_;
   asio::streambuf buf_;
   RespParser parser_;
   CommandHandler handler_; ///< Executes commands received from the master against the local store.
+  std::size_t replica_offset_{0}; ///< Bytes consumed from the replication command stream so far.
 };
 
