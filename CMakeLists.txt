@@ -141,6 +141,7 @@ add_executable(redis_tests
         tests/unit/resp_parser_test.cpp
         tests/unit/store_test.cpp
         tests/unit/command_handler_test.cpp
+        tests/unit/replica_registry_test.cpp
         tests/integration/ping_echo_test.cpp
         tests/integration/set_get_test.cpp
         tests/integration/concurrent_test.cpp

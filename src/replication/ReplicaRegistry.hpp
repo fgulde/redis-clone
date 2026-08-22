@@ -6,12 +6,15 @@
 
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 /**
  * @brief Tracks connected replica write-callbacks and propagates commands to all of them.
- * Thread-safe: propagate() is called from the store thread, write callbacks post to network threads.
+ * Thread-safe: propagate() is called from the store thread, write callbacks post to network threads,
+ * and add()/remove()/record_ack() are called directly from network threads by Connection.
  */
 class ReplicaRegistry {
 public:
@@ -28,9 +31,33 @@ public:
    */
   [[nodiscard]] auto master_offset() const -> long long;
 
+  /**
+   * @brief Records the offset a replica last reported via REPLCONF ACK. No-op if replica_id is unknown (e.g. already disconnected).
+   */
+  void record_ack(ReplicaId replica_id, long long offset);
+
+  /**
+   * @brief The offset the given replica last acknowledged, or std::nullopt if it never sent one (or is unknown).
+   */
+  [[nodiscard]] auto acked_offset(ReplicaId replica_id) const -> std::optional<long long>;
+
+  /**
+   * @brief Snapshot of every currently registered replica's last-acknowledged offset, in no particular order.
+   */
+  [[nodiscard]] auto acked_offsets() const -> std::vector<long long>;
+
+  /// @brief Number of currently registered (connected) replicas.
+  [[nodiscard]] auto replica_count() const -> std::size_t;
+
 private:
-  mutable std::mutex mu_; ///< Mutex to protect concurrent access to the replicas_ map and master_offset_
-  std::unordered_map<ReplicaId, WriteFn> replicas_; ///< Map of registered replicas, keyed by their unique ReplicaId, storing their write callbacks
+  /// @brief Per-replica state: how to reach it, and the offset it last acknowledged.
+  struct ReplicaState {
+    WriteFn write_fn;
+    long long acked_offset{0};
+  };
+
+  mutable std::mutex mu_; ///< Mutex to protect concurrent access to replicas_ and master_offset_
+  std::unordered_map<ReplicaId, ReplicaState> replicas_; ///< Map of registered replicas, keyed by their unique ReplicaId
   ReplicaId next_id_{0}; ///< Counter to generate unique ReplicaIds for new replicas, incremented atomically within add()
   mutable long long master_offset_{0}; ///< Total bytes propagated so far, advanced in propagate()
 };

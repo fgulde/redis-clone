@@ -31,22 +31,24 @@ be re-litigated every session.
   (`parse_fullresync_offset()`) and incremented by `consumed` bytes in
   `try_process_one_buffered_command()` — not yet read by anything (that's step 2's job). Covered
   by `ReplicationPropagationTest.MasterReplOffsetAdvancesWithPropagatedWrites`.
+- **`REPLCONF ACK <offset>` (2026-08-22)**: `ReplicationSession` now sends `REPLCONF ACK
+  <replica_offset_>` once a second, unprompted, via a new `ack_timer_`/`schedule_ack()`/`send_ack()`
+  triplet started once from `start_command_loop()` right after the RDB transfer completes; the
+  ack-send loop and the command-receive loop run independently from then on, and the ack loop
+  self-terminates if a write ever fails (e.g. master gone) since `send_array()`'s `on_sent` — which
+  reschedules the next ack — is only invoked on success. `ReplicaRegistry`'s map changed from
+  `ReplicaId → WriteFn` to `ReplicaId → {WriteFn, acked_offset}` (`record_ack()`, `acked_offset()`,
+  `acked_offsets()`, `replica_count()`); `Connection::do_read()` intercepts `REPLCONF ACK` directly
+  (before the normal dispatch-to-`CommandHandler` path) since it's the only place that already
+  knows this connection's `replica_id_`, and answers with **no reply**, matching real Redis. Did
+  *not* need a `Command::Type` split for `ACK` vs. `GETACK` — that's only needed once step 3 adds
+  `GETACK` handling on the replica's inbound stream (this step only touched the master-inbound
+  side). `INFO replication` on a master now also reports real `connected_slaves` and one
+  `slaveN:offset=<N>` line per connected replica (reduced form of real Redis's `slaveN:ip=...`
+  line — ip/port aren't tracked). Covered by `tests/unit/replica_registry_test.cpp` and
+  `ReplicationPropagationTest.ReplicaAcknowledgesOffsetToMaster`.
 
 ## Required for protocol completeness (the actual remaining scope)
-
-Do these in order — each depends on the one before it.
-
-### 2. `REPLCONF ACK <offset>` (replica → master)
-
-- Replica side: `ReplicationSession` needs a periodic timer (real Redis: every 1s) that sends
-  `REPLCONF ACK <offset>` unprompted on the existing master connection.
-- Master side: incoming data on an already-`PSYNC`'d `Connection` currently all routes through
-  `replication_handler_`. `REPLCONF ACK` must be intercepted there and handled **without** a
-  reply (real Redis never replies to an ACK) — the reported offset needs to be stored per
-  replica, e.g. by extending `ReplicaRegistry`'s map from `ReplicaId → WriteFn` to
-  `ReplicaId → {WriteFn, last_acked_offset}`.
-- `Command::Type` likely needs to distinguish `REPLCONF ACK` from `REPLCONF GETACK` — same
-  command name, opposite direction and purpose.
 
 ### 3. `REPLCONF GETACK *` (master → replica)
 

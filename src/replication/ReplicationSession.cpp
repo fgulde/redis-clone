@@ -5,14 +5,20 @@
 #include "ReplicationSession.hpp"
 
 #include <charconv>
+#include <chrono>
 #include <iterator>
 
 #include "../util/Logger.hpp"
+
+namespace {
+  constexpr std::chrono::seconds kAckInterval{1}; ///< Matches real Redis's replica ACK heartbeat.
+}
 
 ReplicationSession::ReplicationSession(tcp::socket socket, const unsigned short listening_port,
   Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager,
   asio::io_context& store_ctx, const ServerConfig &config)
   : socket_(std::move(socket))
+  , ack_timer_(socket_.get_executor())
   , listening_port_(listening_port)
   , store_ctx_(store_ctx)
   , handler_(store, blocking_manager, watch_manager, config, {}, {}, CommandHandler::RegistryKind::Client) {}
@@ -114,7 +120,7 @@ void ReplicationSession::receive_rdb_body(const std::size_t size) {
   if (already_have >= size) {
     buf_.consume(size);
     Logger::log("Replica RDB received, starting command loop");
-    receive_commands();
+    start_command_loop();
     return;
   }
 
@@ -127,8 +133,13 @@ void ReplicationSession::receive_rdb_body(const std::size_t size) {
       }
       self->buf_.consume(size);
       Logger::log("Replica RDB received, starting command loop");
-      self->receive_commands();
+      self->start_command_loop();
     });
+}
+
+void ReplicationSession::start_command_loop() {
+  receive_commands();
+  schedule_ack();
 }
 
 void ReplicationSession::receive_commands() {
@@ -169,6 +180,23 @@ auto ReplicationSession::try_process_one_buffered_command() -> bool {
     self->handler_.handle(*cmd, self->store_ctx_.get_executor(), [](const std::string&) -> void {});
   });
   return true;
+}
+
+void ReplicationSession::schedule_ack() {
+  auto self = shared_from_this();
+  ack_timer_.expires_after(kAckInterval);
+  ack_timer_.async_wait([self](const asio::error_code error) -> void {
+    // error != {} means the timer was destroyed/cancelled (e.g. the session is gone) — stop here.
+    if (error) { return; }
+    self->send_ack();
+  });
+}
+
+void ReplicationSession::send_ack() {
+  auto self = shared_from_this();
+  send_array({"REPLCONF", "ACK", std::to_string(replica_offset_)}, [self] -> void {
+    self->schedule_ack();
+  });
 }
 
 void ReplicationSession::send_array(const std::vector<std::string>& parts, const std::function<void()>& on_sent) {

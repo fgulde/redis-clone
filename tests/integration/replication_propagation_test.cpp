@@ -191,6 +191,19 @@ TEST_F(ReplicationPropagationTest, MasterReplOffsetAdvancesWithPropagatedWrites)
     EXPECT_EQ(master_repl_offset(master_client), after_two_writes);
 }
 
+TEST_F(ReplicationPropagationTest, ReplicaAcknowledgesOffsetToMaster) {
+    TestClient master_client(master().port());
+    EXPECT_EQ(master_client.command("SET", "ack-key", "v"), "+OK\r\n");
+    const auto expected_offset = master_repl_offset(master_client);
+
+    // The replica sends REPLCONF ACK <offset> unprompted, once a second — wait past that interval.
+    std::this_thread::sleep_for(1300ms);
+
+    const auto info = master_client.command("INFO", "replication");
+    EXPECT_NE(info.find("connected_slaves:1\r\n"), std::string::npos);
+    EXPECT_NE(info.find(std::format("slave0:offset={}\r\n", expected_offset)), std::string::npos);
+}
+
 TEST_F(ReplicationPropagationTest, ReadOnlyCommandsNotPropagated) {
     TestClient master_client(master().port());
     EXPECT_EQ(master_client.command("SET", "key1", "val1"), "+OK\r\n");

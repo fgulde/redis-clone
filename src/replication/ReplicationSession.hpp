@@ -50,6 +50,17 @@ private:
   /// @return true if a full command was parsed and dispatched, false if buf_ doesn't hold a complete command yet.
   auto try_process_one_buffered_command() -> bool;
 
+  /// Called once, right after the RDB transfer completes: starts both the command receive loop and
+  /// the periodic REPLCONF ACK timer, which run independently of each other from then on.
+  void start_command_loop();
+
+  /// Arms ack_timer_ to send the next REPLCONF ACK after kAckInterval.
+  void schedule_ack();
+
+  /// Sends REPLCONF ACK <offset> to the master and reschedules itself on success. Silently stops
+  /// rescheduling if the write fails (e.g. the master connection is gone) — see send_array().
+  void send_ack();
+
   void send_array(const std::vector<std::string>& parts, const std::function<void()>& on_sent);
 
   /// Reads exactly one RESP value from the master using bytes_transferred-aware buffer management.
@@ -58,10 +69,11 @@ private:
   static auto encode_array(const std::vector<std::string>& parts) -> std::string;
 
   /// @return Bytes consumed from the master's command stream so far (seeded from FULLRESYNC's offset).
-  /// Mirrors the master's master_repl_offset; will back REPLCONF ACK once that's implemented.
+  /// Mirrors the master's master_repl_offset; reported to the master via REPLCONF ACK.
   [[nodiscard]] auto offset() const -> std::size_t { return replica_offset_; }
 
   tcp::socket socket_;
+  asio::steady_timer ack_timer_; ///< Fires periodically to send REPLCONF ACK; must be declared after socket_ (seeded from its executor).
   unsigned short listening_port_;
   asio::io_context& store_ctx_;
   asio::streambuf buf_;

@@ -4,9 +4,12 @@
 
 #include "Connection.hpp"
 
+#include <charconv>
 #include <iostream>
+#include <iterator>
 
 #include "../util/Logger.hpp"
+#include "../util/StringUtils.hpp"
 
 using namespace std::string_view_literals;
 
@@ -123,6 +126,22 @@ void Connection::do_read() {
       } else {
         mode_ = ConnectionMode::Client;
       }
+    }
+
+    // A synced replica periodically sends REPLCONF ACK <offset> without expecting a reply back — handle
+    // it here, before normal dispatch, since only Connection knows this socket's replica_id_.
+    if (mode_ == ConnectionMode::Replication && parsed.type == Command::Type::Replconf &&
+        !parsed.args.empty() && string_utils::lowercase(parsed.args.at(0)) == "ack") {
+      if (parsed.args.size() >= 2 && replica_registry_) {
+        const std::string& offset_str = parsed.args.at(1);
+        const auto* const begin = offset_str.data();
+        const auto* const end = std::next(begin, static_cast<std::ptrdiff_t>(offset_str.size()));
+        if (long long offset = 0; std::from_chars(begin, end, offset).ec == std::errc{}) {
+          replica_registry_->record_ack(replica_id_, offset);
+        }
+      }
+      do_read();
+      return;
     }
 
     const bool is_replication_command = parsed.type == Command::Type::Replconf || parsed.type == Command::Type::Psync;

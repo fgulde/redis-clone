@@ -50,7 +50,15 @@ auto build_replication_section(const ServerConfig& config, const std::shared_ptr
   section += std::format("role:{}\r\n", config.role_str());
 
   if (!config.is_replica()) {
-    section += "connected_slaves:0\r\n";
+    const auto replica_count = replica_registry ? replica_registry->replica_count() : std::size_t{0};
+    section += std::format("connected_slaves:{}\r\n", replica_count);
+
+    // Reduced form of real Redis's "slaveN:ip=...,port=...,state=...,offset=...,lag=..." — this
+    // server doesn't track a connected replica's ip/port, only the offset it last acknowledged.
+    const auto acked_offsets = replica_registry ? replica_registry->acked_offsets() : std::vector<long long>{};
+    for (std::size_t i = 0; i < acked_offsets.size(); ++i) {
+      section += std::format("slave{}:offset={}\r\n", i, acked_offsets.at(i));
+    }
   }
 
   // Only a master's own propagation counter is meaningful here; a replica's sync progress against
@@ -86,7 +94,7 @@ auto build_info_payload(const std::string_view section, const ServerConfig& conf
   const auto normalized_section = string_utils::lowercase(section);
 
   // Helper lambda to append sections to the payload
-  const auto add_all_sections = [&]() -> std::string {
+  const auto add_all_sections = [&] -> std::string {
     std::string payload;
     append_section(payload, build_server_section(config), true);
     append_section(payload, build_clients_section(get_connected_clients), false);
