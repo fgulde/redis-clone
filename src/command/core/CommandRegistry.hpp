@@ -15,6 +15,7 @@
 #include "../../state/BlockingManager.hpp"
 #include "../../state/WatchManager.hpp"
 #include "../../state/ServerConfig.hpp"
+#include "../../replication/ReplicaRegistry.hpp"
 #include "../execution/TransactionManager.hpp"
 
 /**
@@ -54,13 +55,15 @@ private:
  * @param get_connected_clients Optional function to get the current number of connected clients (used for INFO command).
  * @param get_used_memory Optional function to get the current used memory in bytes (used for
  * @param finder Function to find other commands (needed for EXEC).
+ * @param replica_registry Optional registry to propagate queued write commands to once EXEC actually runs them.
  * @return A fully populated CommandRegistry.
  */
 auto build_client_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager,
                     TransactionManager& transaction_manager, const ServerConfig& config,
                     std::function<std::size_t()> get_connected_clients = {},
                     std::function<std::size_t()> get_used_memory = {},
-                    std::function<const ICommand*(Command::Type)> finder = {}) -> CommandRegistry;
+                    std::function<const ICommand*(Command::Type)> finder = {},
+                    std::shared_ptr<ReplicaRegistry> replica_registry = {}) -> CommandRegistry;
 
 /**
  * @brief Factory function to build and populate a CommandRegistry with replication commands.

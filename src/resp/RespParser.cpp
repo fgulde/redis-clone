@@ -1,4 +1,4 @@
-//
+  //
 // Created by fguld on 4/12/2026.
 //
 
@@ -6,6 +6,7 @@
 
 #include <ranges>
 #include <charconv>
+#include <format>
 #include <memory>
 #include <vector>
 
@@ -29,6 +30,7 @@ namespace {
     pos = end + 2; // Move past \r\n
     return line;
   }
+
   auto parse_int(const std::string_view line, int& out) -> bool {
     auto [ptr, ec] = std::from_chars(std::to_address(line.begin()), std::to_address(line.end()), out);
     return ec == std::errc{};
@@ -106,6 +108,27 @@ auto RespParser::parse(const std::string_view input) -> std::optional<RespValue>
   }
 
   return current_value;
+}
+
+auto RespParser::serialize(const RespValue& value) -> std::string {
+  switch (value.type) {
+    case RespValue::Type::SimpleString:
+      return std::format("+{}\r\n", value.str);
+    case RespValue::Type::Integer:
+      return std::format(":{}\r\n", value.str);
+    case RespValue::Type::BulkString:
+      return std::format("${}\r\n{}\r\n", value.str.size(), value.str);
+    case RespValue::Type::Null:
+      return "$-1\r\n";
+    case RespValue::Type::Array: {
+      std::string encoded = std::format("*{}\r\n", value.elements.size());
+      for (const auto& element : value.elements) {
+        encoded += serialize(element);
+      }
+      return encoded;
+    }
+  }
+  return {};
 }
 
 auto RespParser::parse_simple_string(const std::string_view input, std::size_t &pos) -> std::optional<RespValue> {

@@ -18,7 +18,7 @@ Connection::Connection(tcp::socket socket, Store &store, BlockingManager &blocki
   , store_ctx_(store_ctx)
   , on_disconnect_(std::move(on_disconnect))
   , client_handler_(store, blocking_manager, watch_manager, config, std::move(get_connected_clients),
-                    std::move(get_used_memory), CommandHandler::RegistryKind::Client)
+                    std::move(get_used_memory), CommandHandler::RegistryKind::Client, replica_registry)
   , replication_handler_(store, blocking_manager, watch_manager, config, {}, {},
                          CommandHandler::RegistryKind::Replication)
   , replica_registry_(std::move(replica_registry)) {}
@@ -72,13 +72,13 @@ void Connection::do_read() {
     auto write_response = [this, self](const std::string& response) -> void {
       asio::post(socket_.get_executor(), [this, self, response]() -> void {
         asio::async_write(socket_, asio::buffer(response),
-                          [this, self](const asio::error_code &write_error, std::size_t) -> void {
-                            if (write_error) {
-                              if (on_disconnect_) { on_disconnect_(); }
-                              return;
-                            }
-                            do_read();
-                          });
+          [this, self](const asio::error_code &write_error, std::size_t) -> void {
+            if (write_error) {
+              if (on_disconnect_) { on_disconnect_(); }
+              return;
+            }
+            do_read();
+          });
       });
     };
 
@@ -115,8 +115,8 @@ void Connection::do_read() {
             asio::post(socket_.get_executor(), [this, self, data = std::move(data)]() -> void {
               auto buf = std::make_shared<std::string>(data);
               asio::async_write(socket_, asio::buffer(*buf),
-                                [self, buf](const asio::error_code &, std::size_t) -> void {
-                                });
+                [self, buf](const asio::error_code &, std::size_t) -> void {
+                });
             });
           });
         }
@@ -130,19 +130,10 @@ void Connection::do_read() {
       ? replication_handler_
       : client_handler_;
 
-    // Propagate write commands to all connected replicas after execution
-    const bool should_propagate = (mode_ == ConnectionMode::Client) && Command::is_write_command(parsed.type) &&
-                                  replica_registry_;
-    auto on_reply = [write_response, should_propagate, request, registry = replica_registry_](
-      const std::string &response) -> void {
-      write_response(response);
-      if (should_propagate) {
-        registry->propagate(request);
-      }
-    };
-
-    asio::post(store_ctx_, [this, self, command, &handler, on_reply]() -> void {
-      handler.handle(*command, store_ctx_.get_executor(), on_reply);
+    // Write-command propagation to replicas happens inside TransactionDispatcher, on the store thread — it's the
+    // only place that reliably knows whether a command actually executed versus merely got queued in a MULTI block.
+    asio::post(store_ctx_, [this, self, command, &handler, write_response]() -> void {
+      handler.handle(*command, store_ctx_.get_executor(), write_response);
     });
   }
   });

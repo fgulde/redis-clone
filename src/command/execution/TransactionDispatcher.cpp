@@ -3,10 +3,12 @@
 //
 
 #include "./TransactionDispatcher.hpp"
+#include "../../resp/RespParser.hpp"
 #include <format>
 
-TransactionDispatcher::TransactionDispatcher(const CommandRegistry& registry, TransactionManager& transaction_manager)
-    : registry_(registry), tm_(transaction_manager) {}
+TransactionDispatcher::TransactionDispatcher(const CommandRegistry& registry, TransactionManager& transaction_manager,
+                                             std::shared_ptr<ReplicaRegistry> replica_registry)
+    : registry_(registry), tm_(transaction_manager), replica_registry_(std::move(replica_registry)) {}
 
 void TransactionDispatcher::dispatch(const RespValue& request, const Command& cmd,
                                     const asio::any_io_executor& executor,
@@ -37,7 +39,17 @@ void TransactionDispatcher::dispatch(const RespValue& request, const Command& cm
 
   // Case B: Regular command execution.
   if (const auto* command_impl = registry_.find(cmd.type)) {
-    command_impl->execute(cmd, executor, on_reply);
+    // Propagate only once the command has actually run, never at queue time.
+    if (replica_registry_ && Command::is_write_command(cmd.type)) {
+      auto propagating_reply = [on_reply, registry = replica_registry_, raw = RespParser::serialize(request)](
+        const std::string& response) -> void {
+        on_reply(response);
+        registry->propagate(raw);
+      };
+      command_impl->execute(cmd, executor, propagating_reply);
+    } else {
+      command_impl->execute(cmd, executor, on_reply);
+    }
   } else {
     on_reply(std::format("-ERR unknown command '{}'\r\n", cmd.name));
   }

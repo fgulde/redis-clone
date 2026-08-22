@@ -44,7 +44,7 @@ public:
     /**
      * @brief Checks whether a watched key was modified since the transaction started.
      */
-    [[nodiscard]] bool is_dirty() const;
+    [[nodiscard]] auto is_dirty() const -> bool;
 
     /**
      * @brief Stores a watched key for this connection if it is not already monitored.
@@ -67,11 +67,11 @@ public:
      * @brief Checks if a transaction is currently active.
      * @return True if in MULTI mode.
      */
-    [[nodiscard]] bool is_active() const;
+    [[nodiscard]] auto is_active() const -> bool;
 
     /**
      * @brief Returns and clears the queued commands.
-     * @return A vector of queued RespValue objects.
+    * @return A vector of queued RespValue objects.
      */
     auto pop_queued_commands() -> std::vector<RespValue>;
 

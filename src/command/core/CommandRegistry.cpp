@@ -24,7 +24,8 @@ auto CommandRegistry::find(const Command::Type type) const -> const ICommand* {
 auto build_client_registry(Store& store, BlockingManager& blocking_manager, WatchManager& watch_manager, TransactionManager& transaction_manager, const ServerConfig& config,
                    std::function<std::size_t()> get_connected_clients,
                    std::function<std::size_t()> get_used_memory,
-                   std::function<const ICommand*(Command::Type)> finder) -> CommandRegistry {
+                   std::function<const ICommand*(Command::Type)> finder,
+                   std::shared_ptr<ReplicaRegistry> replica_registry) -> CommandRegistry {
   CommandRegistry registry;
 
   // Basic Commands
@@ -55,7 +56,7 @@ auto build_client_registry(Store& store, BlockingManager& blocking_manager, Watc
 
   // Transaction Commands
   registry.register_command(Command::Type::Multi, std::make_unique<MultiCommand>(transaction_manager));
-  registry.register_command(Command::Type::Exec, std::make_unique<ExecCommand>(transaction_manager, std::move(finder)));
+  registry.register_command(Command::Type::Exec, std::make_unique<ExecCommand>(transaction_manager, std::move(finder), std::move(replica_registry)));
   registry.register_command(Command::Type::Discard, std::make_unique<DiscardCommand>(transaction_manager));
 
   return registry;

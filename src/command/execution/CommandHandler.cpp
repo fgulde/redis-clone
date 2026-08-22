@@ -8,15 +8,16 @@
 
 CommandHandler::CommandHandler(Store &store, BlockingManager &blocking_manager, WatchManager &watch_manager,
   const ServerConfig& config, std::function<std::size_t()> get_connected_clients, std::function<std::size_t()> get_used_memory,
-  const RegistryKind registry_kind)
+  const RegistryKind registry_kind, std::shared_ptr<ReplicaRegistry> replica_registry)
     : registry_kind_(registry_kind)
     , tm_(watch_manager)
     , registry_(registry_kind == RegistryKind::Replication
         ? build_replication_registry(config)
         : build_client_registry(store, blocking_manager, watch_manager, tm_, config,
             std::move(get_connected_clients), std::move(get_used_memory),
-            [this](const Command::Type command_type) -> const ICommand * { return registry_.find(command_type); }))
-    , dispatcher_(registry_, tm_) {}
+            [this](const Command::Type command_type) -> const ICommand * { return registry_.find(command_type); },
+            replica_registry))
+    , dispatcher_(registry_, tm_, std::move(replica_registry)) {}
 
 auto CommandHandler::parse_command(const RespValue &request) -> Command {
   Command cmd;

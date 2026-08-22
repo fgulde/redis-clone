@@ -22,6 +22,13 @@ public:
    * @return Parsed RespValue, or std::nullopt if parsing failed
    */
   static auto parse(std::string_view input) -> std::optional<RespValue>;
+
+  /**
+   * Serializes a RespValue back into its RESP2 wire format.
+   * @param value The value to serialize.
+   * @return The RESP2-encoded string.
+   */
+  static auto serialize(const RespValue& value) -> std::string;
 private:
   static auto parse_simple_string(std::string_view input, std::size_t &pos) -> std::optional<RespValue>;
   static auto parse_integer(std::string_view input, std::size_t& pos) -> std::optional<RespValue>;

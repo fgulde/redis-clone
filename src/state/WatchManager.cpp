@@ -7,7 +7,7 @@
 
 auto WatchManager::watch(const std::string& key, Callback callback) -> uint64_t {
   const uint64_t watch_id = next_id_++;
-  watchers_[key].push_back({watch_id, std::move(callback)});
+  watchers_[key].push_back({.id=watch_id, .callback=std::move(callback)});
   id_to_keys_[watch_id].push_back(key);
   return watch_id;
 }

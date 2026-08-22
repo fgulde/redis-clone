@@ -4,6 +4,7 @@
 
 #include "TransactionCommands.hpp"
 #include "../execution/CommandHandler.hpp"
+#include "../../resp/RespParser.hpp"
 #include <format>
 #include <vector>
 #include <string>
@@ -51,7 +52,7 @@ void ExecCommand::execute(const Command& /*cmd*/, const asio::any_io_executor& e
 
     // Recursive lambda to execute commands sequentially and asynchronously
     auto run_next = std::make_shared<std::function<void()>>();
-    *run_next = [this, ctx, executor, on_reply, run_next]() -> void {
+    *run_next = [this, ctx, executor, on_reply, run_next] -> void {
         // If we've executed all commands, compile the final reply and return it
         if (ctx->index == ctx->commands.size()) {
             std::string final_reply = std::format("*{}\r\n", ctx->results.size());
@@ -63,17 +64,23 @@ void ExecCommand::execute(const Command& /*cmd*/, const asio::any_io_executor& e
         }
 
         // Parse the next command using the static parse_command method from CommandHandler
-        const auto& next_req = ctx->commands[ctx->index];
+        const auto& next_req = ctx->commands.at(ctx->index);
         const auto next_cmd = CommandHandler::parse_command(next_req);
 
         if (const auto* command_impl = finder_(next_cmd.type)) {
-            command_impl->execute(next_cmd, executor, [ctx, run_next](std::string res) {
-                ctx->results[ctx->index] = std::move(res);
+            const Command::Type command_type = next_cmd.type;
+            command_impl->execute(next_cmd, executor,
+                [this, ctx, run_next, command_type, next_req](std::string res) -> void {
+                ctx->results.at(ctx->index) = std::move(res);
+                // Only now that the command actually ran (not merely queued) is it safe to propagate it.
+                if (replica_registry_ && Command::is_write_command(command_type)) {
+                    replica_registry_->propagate(RespParser::serialize(next_req));
+                }
                 ctx->index++;
                 (*run_next)();
             });
         } else {
-            ctx->results[ctx->index] = std::format("-ERR unknown command '{}'\r\n", next_cmd.name);
+            ctx->results.at(ctx->index) = std::format("-ERR unknown command '{}'\r\n", next_cmd.name);
             ctx->index++;
             (*run_next)();
         }

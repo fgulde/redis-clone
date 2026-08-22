@@ -10,6 +10,7 @@
 
 #include "TransactionDispatcher.hpp"
 #include "TransactionManager.hpp"
+#include "../../replication/ReplicaRegistry.hpp"
 #include "../../state/BlockingManager.hpp"
 #include "../../state/ServerConfig.hpp"
 #include "../../state/WatchManager.hpp"
@@ -28,7 +29,8 @@ public:
     const ServerConfig& config = ServerConfig::master(),
     std::function<std::size_t()> get_connected_clients = {},
     std::function<std::size_t()> get_used_memory = {},
-    RegistryKind registry_kind = RegistryKind::Client);
+    RegistryKind registry_kind = RegistryKind::Client,
+    std::shared_ptr<ReplicaRegistry> replica_registry = {});
 
   /**
    * @brief Handles a RESP request and produces a response string via an async callback.

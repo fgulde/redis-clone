@@ -6,10 +6,12 @@
 
 #include <asio.hpp>
 #include <functional>
+#include <memory>
 #include <string>
 #include "../core/Command.hpp"
 #include "../core/CommandRegistry.hpp"
 #include "TransactionManager.hpp"
+#include "../../replication/ReplicaRegistry.hpp"
 #include "../../resp/RespValue.hpp"
 
 /**
@@ -22,8 +24,11 @@ public:
      * @brief Constructs a TransactionDispatcher.
      * @param registry Reference to the command registry to look up implementations.
      * @param transaction_manager Reference to the transaction manager to check the transaction state.
+     * @param replica_registry Optional registry to propagate write commands to once they actually execute
+     * (as opposed to merely being queued inside a MULTI block).
      */
-    TransactionDispatcher(const CommandRegistry& registry, TransactionManager& transaction_manager);
+    TransactionDispatcher(const CommandRegistry& registry, TransactionManager& transaction_manager,
+                          std::shared_ptr<ReplicaRegistry> replica_registry = {});
 
     /**
      * @brief Dispatches a command based on the current transaction state.
@@ -43,4 +48,5 @@ public:
 private:
     const CommandRegistry& registry_;
     TransactionManager& tm_;
+    std::shared_ptr<ReplicaRegistry> replica_registry_;
 };

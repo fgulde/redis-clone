@@ -106,6 +106,34 @@ TEST_F(ReplicationPropagationTest, MultipleSetsPropagatedInOrder) {
     EXPECT_EQ(replica_client.command("GET", "counter"), "$1\r\n3\r\n");
 }
 
+TEST_F(ReplicationPropagationTest, DiscardedTransactionIsNotPropagated) {
+    TestClient master_client(master_->port());
+    EXPECT_EQ(master_client.command("MULTI"), "+OK\r\n");
+    EXPECT_EQ(master_client.command("SET", "discarded-key", "hello"), "+QUEUED\r\n");
+    EXPECT_EQ(master_client.command("DISCARD"), "+OK\r\n");
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    TestClient replica_client(replica_->port());
+    EXPECT_EQ(replica_client.command("GET", "discarded-key"), "$-1\r\n");
+}
+
+TEST_F(ReplicationPropagationTest, QueuedWriteOnlyPropagatedOnceExecRunsIt) {
+    TestClient master_client(master_->port());
+    EXPECT_EQ(master_client.command("MULTI"), "+OK\r\n");
+    EXPECT_EQ(master_client.command("SET", "txn-key", "final"), "+QUEUED\r\n");
+
+    // Nothing should have reached the replica yet — the write is still only queued on the master.
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    TestClient replica_client(replica_->port());
+    EXPECT_EQ(replica_client.command("GET", "txn-key"), "$-1\r\n");
+
+    ASSERT_EQ(master_client.command("EXEC"), "*1\r\n+OK\r\n");
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    EXPECT_EQ(replica_client.command("GET", "txn-key"), "$5\r\nfinal\r\n");
+}
+
 TEST_F(ReplicationPropagationTest, ReadOnlyCommandsNotPropagated) {
     TestClient master_client(master_->port());
     EXPECT_EQ(master_client.command("SET", "key1", "val1"), "+OK\r\n");
