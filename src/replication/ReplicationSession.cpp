@@ -5,6 +5,7 @@
 #include "ReplicationSession.hpp"
 
 #include <charconv>
+#include <iterator>
 
 #include "../util/Logger.hpp"
 
@@ -21,7 +22,7 @@ void ReplicationSession::start() {
 }
 
 void ReplicationSession::send_ping() {
-  send_array({"PING"}, [self = shared_from_this()]() -> void {
+  send_array({"PING"}, [self = shared_from_this()] -> void {
     self->read_reply([self](const RespValue&) -> void {
       self->send_replconf_listening_port();
     });
@@ -29,7 +30,7 @@ void ReplicationSession::send_ping() {
 }
 
 void ReplicationSession::send_replconf_listening_port() {
-  send_array({"REPLCONF", "listening-port", std::to_string(listening_port_)}, [self = shared_from_this()]() -> void {
+  send_array({"REPLCONF", "listening-port", std::to_string(listening_port_)}, [self = shared_from_this()] -> void {
     self->read_reply([self](const RespValue&) -> void {
       self->send_replconf_capa();
     });
@@ -37,7 +38,7 @@ void ReplicationSession::send_replconf_listening_port() {
 }
 
 void ReplicationSession::send_replconf_capa() {
-  send_array({"REPLCONF", "capa", "psync2"}, [self = shared_from_this()]() -> void {
+  send_array({"REPLCONF", "capa", "psync2"}, [self = shared_from_this()] -> void {
     self->read_reply([self](const RespValue&) -> void {
       self->send_psync();
     });
@@ -45,7 +46,7 @@ void ReplicationSession::send_replconf_capa() {
 }
 
 void ReplicationSession::send_psync() {
-  send_array({"PSYNC", "?", "-1"}, [self = shared_from_this()]() -> void {
+  send_array({"PSYNC", "?", "-1"}, [self = shared_from_this()] -> void {
     self->read_reply([self](const RespValue& reply) -> void {
       if (reply.type == RespValue::Type::SimpleString) {
         Logger::log("Replica PSYNC reply: {}", reply.str);
@@ -59,15 +60,16 @@ void ReplicationSession::receive_rdb() {
   // Read the "$<N>\r\n" bulk-string header to determine the RDB size.
   auto self = shared_from_this();
   asio::async_read_until(socket_, buf_, "\r\n",
-    [this, self](const asio::error_code error, const std::size_t bytes_transferred) -> void {
+    [self](const asio::error_code error, const std::size_t bytes_transferred) -> void {
       if (error) {
         Logger::log("Replica RDB header read error: {}", error.message());
         return;
       }
 
       // Extract only the bytes up to and including the \r\n
-      const std::string line(asio::buffers_begin(buf_.data()), asio::buffers_begin(buf_.data()) + bytes_transferred);
-      buf_.consume(bytes_transferred);
+      const auto begin = asio::buffers_begin(self->buf_.data());
+      const std::string line(begin, begin + static_cast<std::ptrdiff_t>(bytes_transferred));
+      self->buf_.consume(bytes_transferred);
 
       // Line is "$<N>\r\n" — skip the leading '$' and trailing "\r\n"
       if (line.empty() || line.front() != '$') {
@@ -75,16 +77,17 @@ void ReplicationSession::receive_rdb() {
         return;
       }
 
-      std::size_t size = 0;
-      const std::string_view num_part(line.data() + 1, line.size() - 3); // skip '$' and '\r\n'
-      if (auto [ptr, ec] = std::from_chars(num_part.data(), num_part.data() + num_part.size(), size);
-          ec != std::errc{}) {
+      std::size_t size { 0 };
+      const std::string_view num_part = std::string_view(line).substr(1, line.size() - 3); // skip '$' and '\r\n'
+      const auto* const num_begin = num_part.data();
+      const auto* const num_end = std::next(num_begin, static_cast<std::ptrdiff_t>(num_part.size()));
+      if (auto [ptr, ec] = std::from_chars(num_begin, num_end, size); ec != std::errc{}) {
         Logger::log("Replica failed to parse RDB size from: {}", line);
         return;
       }
 
       Logger::log("Replica receiving RDB ({} bytes)", size);
-      receive_rdb_body(size);
+      self->receive_rdb_body(size);
     });
 }
 
@@ -101,42 +104,54 @@ void ReplicationSession::receive_rdb_body(const std::size_t size) {
 
   const std::size_t need_more = size - already_have;
   asio::async_read(socket_, buf_, asio::transfer_exactly(need_more),
-    [this, self, size](const asio::error_code error, std::size_t) -> void {
+    [self, size](const asio::error_code error, std::size_t) -> void {
       if (error) {
         Logger::log("Replica RDB body read error: {}", error.message());
         return;
       }
-      buf_.consume(size);
+      self->buf_.consume(size);
       Logger::log("Replica RDB received, starting command loop");
-      receive_commands();
+      self->receive_commands();
     });
 }
 
 void ReplicationSession::receive_commands() {
+  // Drain every complete command already sitting in buf_ before touching the socket again — a
+  // single TCP read from the master can (and often does) contain more than one propagated command.
+  // Looping here (rather than recursing) keeps a burst of buffered commands from growing the call stack.
+  while (try_process_one_buffered_command()) {}
+
   auto self = shared_from_this();
-  asio::async_read_until(socket_, buf_, "\r\n",
-    [this, self](const asio::error_code error, std::size_t) -> void {
+  asio::async_read(socket_, buf_, asio::transfer_at_least(1),
+    [self](const asio::error_code error, std::size_t) -> void {
       if (error) {
         Logger::log("Replica command read error: {}", error.message());
         return;
       }
-
-      // Drain the buffer and parse a command
-      const std::string data(asio::buffers_begin(buf_.data()), asio::buffers_end(buf_.data()));
-      buf_.consume(buf_.size());
-
-      if (const auto command_opt = RespParser::parse(data)) {
-        // Execute without sending a reply back to the master
-        auto cmd = std::make_shared<RespValue>(*command_opt);
-        asio::post(store_ctx_, [this, self, cmd]() -> void {
-          handler_.handle(*cmd, store_ctx_.get_executor(), [](const std::string&) -> void {});
-        });
-      } else {
-        Logger::log("Replica failed to parse command from master");
-      }
-
-      receive_commands();
+      self->receive_commands();
     });
+}
+
+auto ReplicationSession::try_process_one_buffered_command() -> bool {
+  if (buf_.size() == 0) { return false; }
+
+  const std::string data(asio::buffers_begin(buf_.data()), asio::buffers_end(buf_.data()));
+  std::size_t consumed{ 0 };
+  const auto command_opt = RespParser::parse(data, consumed);
+  if (!command_opt) {
+    // Not enough data yet for a complete command — leave buf_ untouched and wait for more bytes.
+    return false;
+  }
+
+  buf_.consume(consumed);
+
+  // Execute without sending a reply back to the master
+  auto cmd = std::make_shared<RespValue>(*command_opt);
+  auto self = shared_from_this();
+  asio::post(store_ctx_, [self, cmd] -> void {
+    self->handler_.handle(*cmd, self->store_ctx_.get_executor(), [](const std::string&) -> void {});
+  });
+  return true;
 }
 
 void ReplicationSession::send_array(const std::vector<std::string>& parts, const std::function<void()>& on_sent) {
@@ -144,6 +159,9 @@ void ReplicationSession::send_array(const std::vector<std::string>& parts, const
   auto self = shared_from_this();
   asio::async_write(socket_, asio::buffer(*payload),
                     [self, payload, on_sent](const asio::error_code error, std::size_t) -> void {
+                      // self/payload are captured only to stay alive until the write completes.
+                      static_cast<void>(self);
+                      static_cast<void>(payload);
                       if (error) {
                         Logger::log("Replica write error: {}", error.message());
                         return;
@@ -157,15 +175,16 @@ void ReplicationSession::send_array(const std::vector<std::string>& parts, const
 void ReplicationSession::read_reply(const std::function<void(const RespValue&)>& on_reply) {
   auto self = shared_from_this();
   asio::async_read_until(socket_, buf_, "\r\n",
-    [this, self, on_reply](const asio::error_code error, const std::size_t bytes_transferred) -> void {
+    [self, on_reply](const asio::error_code error, const std::size_t bytes_transferred) -> void {
       if (error) {
         Logger::log("Replica read error: {}", error.message());
         return;
       }
 
       // Consume only the bytes up to and including the matched \r\n to preserve any trailing data
-      const std::string response(asio::buffers_begin(buf_.data()), asio::buffers_begin(buf_.data()) + bytes_transferred);
-      buf_.consume(bytes_transferred);
+      const auto begin = asio::buffers_begin(self->buf_.data());
+      const std::string response(begin, begin + static_cast<std::ptrdiff_t>(bytes_transferred));
+      self->buf_.consume(bytes_transferred);
 
       const auto parsed = RespParser::parse(response);
       if (!parsed) {
@@ -180,9 +199,10 @@ void ReplicationSession::read_reply(const std::function<void(const RespValue&)>&
 }
 
 auto ReplicationSession::encode_array(const std::vector<std::string>& parts) -> std::string {
-  std::string payload = std::format("*{}\r\n", std::to_string(parts.size()));
+  RespValue array{ .type = RespValue::Type::Array, .str = {}, .elements = {} };
+  array.elements.reserve(parts.size());
   for (const auto& part : parts) {
-    payload += std::format("${}\r\n{}\r\n", std::to_string(part.size()), part);
+    array.elements.push_back(RespValue{ .type = RespValue::Type::BulkString, .str = part, .elements = {} });
   }
-  return payload;
+  return RespParser::serialize(array);
 }

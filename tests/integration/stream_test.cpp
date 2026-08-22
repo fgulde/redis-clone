@@ -35,7 +35,7 @@ TEST_F(StreamTest, XAddAutoSequence) {
 
 TEST_F(StreamTest, XAddAutoId) {
     const std::string resp = client.command("xadd", "stream3", "*", std::vector<std::string_view>{"foo", "bar"});
-    EXPECT_TRUE(resp.starts_with("$"));
+    EXPECT_TRUE(resp.starts_with('$'));
     EXPECT_TRUE(resp.ends_with("\r\n"));
     // It should be > 0-0 so there should be a '-'
     EXPECT_NE(resp.find('-'), std::string::npos);

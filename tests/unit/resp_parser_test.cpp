@@ -8,8 +8,7 @@
 #include "../../src/resp/RespParser.hpp"
 
 TEST(RespParserTest, ParsesSinglePingCommand) {
-    RespParser parser;
-    const auto result = parser.parse("*1\r\n$4\r\nPING\r\n");
+    const auto result = RespParser::parse("*1\r\n$4\r\nPING\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 1);
@@ -17,8 +16,7 @@ TEST(RespParserTest, ParsesSinglePingCommand) {
 }
 
 TEST(RespParserTest, ParsesPingWithMessage) {
-    RespParser parser;
-    const auto result = parser.parse("*2\r\n$4\r\nPING\r\n$5\r\nhello\r\n");
+    const auto result = RespParser::parse("*2\r\n$4\r\nPING\r\n$5\r\nhello\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 2);
@@ -27,8 +25,7 @@ TEST(RespParserTest, ParsesPingWithMessage) {
 }
 
 TEST(RespParserTest, ParsesEchoCommand) {
-    RespParser parser;
-    const auto result = parser.parse("*2\r\n$4\r\nECHO\r\n$7\r\ntesting\r\n");
+    const auto result = RespParser::parse("*2\r\n$4\r\nECHO\r\n$7\r\ntesting\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 2);
@@ -37,8 +34,7 @@ TEST(RespParserTest, ParsesEchoCommand) {
 }
 
 TEST(RespParserTest, ParsesSetCommandWithExpiry) {
-    RespParser parser;
-    const auto result = parser.parse("*5\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n$2\r\nEX\r\n$2\r\n10\r\n");
+    const auto result = RespParser::parse("*5\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n$2\r\nEX\r\n$2\r\n10\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 5);
@@ -50,8 +46,7 @@ TEST(RespParserTest, ParsesSetCommandWithExpiry) {
 }
 
 TEST(RespParserTest, ParsesRpushWithMultipleElements) {
-    RespParser parser;
-    const auto result = parser.parse("*5\r\n$5\r\nRPUSH\r\n$6\r\nmylist\r\n$1\r\na\r\n$1\r\nb\r\n$1\r\nc\r\n");
+    const auto result = RespParser::parse("*5\r\n$5\r\nRPUSH\r\n$6\r\nmylist\r\n$1\r\na\r\n$1\r\nb\r\n$1\r\nc\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 5);
@@ -63,26 +58,22 @@ TEST(RespParserTest, ParsesRpushWithMultipleElements) {
 }
 
 TEST(RespParserTest, MalformedInputThrowsOrReturnsError) {
-    RespParser parser;
-    const auto result = parser.parse("garbage\r\n");
+    const auto result = RespParser::parse("garbage\r\n");
     EXPECT_FALSE(result.has_value());
 }
 TEST(RespParserTest, ParsesNullArray) {
-    RespParser parser;
-    const auto result = parser.parse("*-1\r\n");
+    const auto result = RespParser::parse("*-1\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Null);
 }
 TEST(RespParserTest, ParsesEmptyArray) {
-    RespParser parser;
-    const auto result = parser.parse("*0\r\n");
+    const auto result = RespParser::parse("*0\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_TRUE(result->elements.empty());
 }
 TEST(RespParserTest, ParsesNestedArray) {
-    RespParser parser;
-    const auto result = parser.parse("*2\r\n*1\r\n:1\r\n*1\r\n:2\r\n");
+    const auto result = RespParser::parse("*2\r\n*1\r\n:1\r\n*1\r\n:2\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Array);
     ASSERT_EQ(result->elements.size(), 2);
@@ -90,22 +81,19 @@ TEST(RespParserTest, ParsesNestedArray) {
     ASSERT_EQ(result->elements.at(1).type, RespValue::Type::Array);
 }
 TEST(RespParserTest, ParsesInteger) {
-    RespParser parser;
-    const auto result = parser.parse(":1000\r\n");
+    const auto result = RespParser::parse(":1000\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Integer);
     ASSERT_EQ(result->str, "1000");
 }
 TEST(RespParserTest, ParsesSimpleString) {
-    RespParser parser;
-    const auto result = parser.parse("+OK\r\n");
+    const auto result = RespParser::parse("+OK\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::SimpleString);
     ASSERT_EQ(result->str, "OK");
 }
 TEST(RespParserTest, ParsesNullBulkString) {
-    RespParser parser;
-    const auto result = parser.parse("$-1\r\n");
+    const auto result = RespParser::parse("$-1\r\n");
     ASSERT_TRUE(result.has_value());
     ASSERT_EQ(result->type, RespValue::Type::Null);
 }

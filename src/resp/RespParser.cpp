@@ -76,8 +76,13 @@ namespace {
 }
 
 auto RespParser::parse(const std::string_view input) -> std::optional<RespValue> {
+  std::size_t consumed{ 0 };
+  return parse(input, consumed);
+}
+
+auto RespParser::parse(const std::string_view input, std::size_t& consumed) -> std::optional<RespValue> {
   if (input.empty()) { return std::nullopt; }
-  std::size_t pos = 0;
+  std::size_t pos{ 0 };
   std::vector<ArrayFrame> stack;
   std::optional<RespValue> current_value;
 
@@ -102,15 +107,19 @@ auto RespParser::parse(const std::string_view input) -> std::optional<RespValue>
       }
     }
 
-    if (stack.empty()) { return current_value; }
+    if (stack.empty()) {
+      consumed = pos;
+      return current_value;
+    }
 
     process_stack(stack, std::move(*current_value), current_value);
   }
 
+  consumed = pos;
   return current_value;
 }
 
-auto RespParser::serialize(const RespValue& value) -> std::string {
+auto RespParser::serialize(const RespValue& value) -> std::string { // NOLINT(*-no-recursion)
   switch (value.type) {
     case RespValue::Type::SimpleString:
       return std::format("+{}\r\n", value.str);

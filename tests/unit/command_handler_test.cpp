@@ -45,7 +45,7 @@ namespace {
         Store store;
         BlockingManager blocking_manager;
         WatchManager watch_manager;
-        CommandHandler handler{store, blocking_manager, watch_manager, ServerConfig::master(), []() -> std::size_t { return 7; }, []() -> std::size_t { return 12345; }};
+        CommandHandler handler{store, blocking_manager, watch_manager, ServerConfig::master(), [] -> std::size_t { return 7; }, [] -> std::size_t { return 12345; }};
         asio::io_context io_context;
     };
 }

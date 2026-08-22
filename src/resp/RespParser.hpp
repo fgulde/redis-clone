@@ -24,6 +24,15 @@ public:
   static auto parse(std::string_view input) -> std::optional<RespValue>;
 
   /**
+   * Same as parse(), but also reports how many bytes of the input were consumed by the
+   * returned value.
+   * @param input Input string to parse
+   * @param consumed Set to the number of bytes consumed from the front of input when parsing succeeds; unspecified otherwise.
+   * @return Parsed RespValue, or std::nullopt if parsing failed (including "not enough data yet")
+   */
+  static auto parse(std::string_view input, std::size_t& consumed) -> std::optional<RespValue>;
+
+  /**
    * Serializes a RespValue back into its RESP2 wire format.
    * @param value The value to serialize.
    * @return The RESP2-encoded string.

@@ -31,7 +31,7 @@ TEST_F(BlpopTest, ReturnsImmediatelyIfListHasElements) {
 }
 
 TEST_F(BlpopTest, BlocksAndReturnsWhenElementPushed) {
-    std::jthread const pusher([&]() -> void {
+    std::jthread const pusher([&] -> void {
         std::this_thread::sleep_for(50ms);
         TestClient t_client{server.port()};
         constexpr std::array<std::string_view, 1> elements{"b"};
@@ -50,7 +50,7 @@ TEST_F(BlpopTest, RpushReturnsCorrectLengthWhenUnblocking) {
     std::condition_variable conditionVariable;
     int ready_clients = 0;
 
-    auto make_waiting_client = [&]() -> void {
+    auto make_waiting_client = [&] -> void {
         TestClient t_client{server.port()};
         {
             std::scoped_lock const lock(mtx);

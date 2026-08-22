@@ -39,8 +39,12 @@ private:
   void receive_rdb();
   void receive_rdb_body(std::size_t size);
 
-  /// Continuous loop: reads one RESP command from the master and executes it without sending a reply.
+  /// Continuous loop: reads more data as needed and executes every complete RESP command found without sending a reply.
   void receive_commands();
+
+  /// Tries to parse and execute one RESP command from data already buffered in buf_.
+  /// @return true if a full command was parsed and dispatched, false if buf_ doesn't hold a complete command yet.
+  auto try_process_one_buffered_command() -> bool;
 
   void send_array(const std::vector<std::string>& parts, const std::function<void()>& on_sent);
 
