@@ -4,6 +4,7 @@
 
 #include "ReplicaRegistry.hpp"
 
+#include <algorithm>
 #include <ranges>
 
 #include "../resp/RespParser.hpp"
@@ -74,4 +75,11 @@ void ReplicaRegistry::request_getack() const {
     },
   };
   propagate(RespParser::serialize(command));
+}
+
+auto ReplicaRegistry::count_acked_at_least(const long long offset) const -> std::size_t {
+  std::scoped_lock const lock(mu_);
+  const auto states = replicas_ | std::views::values;
+  return static_cast<std::size_t>(std::ranges::count_if(states,
+    [offset](const ReplicaState& state) -> bool { return state.acked_offset >= offset; }));
 }

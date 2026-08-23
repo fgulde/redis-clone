@@ -35,3 +35,19 @@ private:
   std::shared_ptr<ReplicaRegistry> replica_registry_; ///< Used to embed the live master offset in the FULLRESYNC reply.
 };
 
+/**
+ * @brief Command to block until at least numreplicas replicas have acknowledged the current
+ * replication offset, or a timeout elapses. Client-only — replicas must never receive WAIT
+ * from a master, so this is registered exclusively under CommandHandler::RegistryKind::Client.
+ */
+class WaitCommand : public ICommand {
+public:
+  explicit WaitCommand(std::shared_ptr<ReplicaRegistry> replica_registry) : replica_registry_(std::move(replica_registry)) {}
+
+  void execute(const Command& cmd, const asio::any_io_executor& executor,
+               const std::function<void(std::string)>& on_reply) const override;
+
+private:
+  std::shared_ptr<ReplicaRegistry> replica_registry_;
+};
+

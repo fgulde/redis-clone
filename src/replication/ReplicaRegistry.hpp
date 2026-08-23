@@ -56,6 +56,12 @@ public:
    */
   void request_getack() const;
 
+  /**
+   * @brief Number of currently registered replicas whose last-acknowledged offset is >= offset.
+   * Used by WAIT to decide whether enough replicas have caught up.
+   */
+  [[nodiscard]] auto count_acked_at_least(long long offset) const -> std::size_t;
+
 private:
   /// @brief Per-replica state: how to reach it, and the offset it last acknowledged.
   struct ReplicaState {

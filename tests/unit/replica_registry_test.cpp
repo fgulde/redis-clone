@@ -72,3 +72,18 @@ TEST(ReplicaRegistryTest, RequestGetackPropagatesReplconfGetackAndAdvancesOffset
     EXPECT_EQ(received, "*3\r\n$8\r\nREPLCONF\r\n$6\r\nGETACK\r\n$1\r\n*\r\n");
     EXPECT_EQ(registry.master_offset(), static_cast<long long>(received.size()));
 }
+
+TEST(ReplicaRegistryTest, CountAckedAtLeastCountsOnlyReplicasThatCaughtUp) {
+    ReplicaRegistry registry;
+    const auto id_a = registry.add([](const std::string&) -> void {});
+    const auto id_b = registry.add([](const std::string&) -> void {});
+    const auto id_c = registry.add([](const std::string&) -> void {});
+
+    registry.record_ack(id_a, 100);
+    registry.record_ack(id_b, 50);
+    registry.record_ack(id_c, 100);
+
+    EXPECT_EQ(registry.count_acked_at_least(100), 2U);
+    EXPECT_EQ(registry.count_acked_at_least(50), 3U);
+    EXPECT_EQ(registry.count_acked_at_least(101), 0U);
+}

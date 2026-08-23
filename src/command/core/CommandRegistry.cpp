@@ -54,6 +54,9 @@ auto build_client_registry(Store& store, BlockingManager& blocking_manager, Watc
   registry.register_command(Command::Type::Watch, std::make_unique<WatchCommand>(transaction_manager, watch_manager));
   registry.register_command(Command::Type::Unwatch, std::make_unique<UnwatchCommand>(transaction_manager));
 
+  // Replication Commands (client-facing only — WAIT must never reach a replica's inbound registry)
+  registry.register_command(Command::Type::Wait, std::make_unique<WaitCommand>(replica_registry));
+
   // Transaction Commands
   registry.register_command(Command::Type::Multi, std::make_unique<MultiCommand>(transaction_manager));
   registry.register_command(Command::Type::Exec, std::make_unique<ExecCommand>(transaction_manager, std::move(finder), std::move(replica_registry)));

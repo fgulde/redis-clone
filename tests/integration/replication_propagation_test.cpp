@@ -219,6 +219,24 @@ TEST_F(ReplicationPropagationTest, GetackForcesImmediateAckFromReplica) {
     EXPECT_NE(info.find(std::format("slave0:offset={}\r\n", expected_offset)), std::string::npos);
 }
 
+TEST_F(ReplicationPropagationTest, WaitSucceedsOnceReplicaCatchesUp) {
+    TestClient master_client(master().port());
+    EXPECT_EQ(master_client.command("SET", "wait-key", "v"), "+OK\r\n");
+
+    // WAIT forces an immediate GETACK round-trip, so this should resolve well within the 2s
+    // timeout — long before the replica's own 1s periodic ACK would have fired on its own.
+    EXPECT_EQ(master_client.command("WAIT", "1", "2000"), ":1\r\n");
+}
+
+TEST_F(ReplicationPropagationTest, WaitTimesOutReportingActualCatchUpCount) {
+    TestClient master_client(master().port());
+    EXPECT_EQ(master_client.command("SET", "wait-key-2", "v"), "+OK\r\n");
+
+    // Only one replica is attached, so asking for 2 can never succeed — must time out and report
+    // how many actually caught up (1), not hang forever.
+    EXPECT_EQ(master_client.command("WAIT", "2", "300"), ":1\r\n");
+}
+
 TEST_F(ReplicationPropagationTest, ReadOnlyCommandsNotPropagated) {
     TestClient master_client(master().port());
     EXPECT_EQ(master_client.command("SET", "key1", "val1"), "+OK\r\n");

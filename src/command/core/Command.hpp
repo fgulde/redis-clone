@@ -39,6 +39,7 @@ struct Command {
     Discard,
     Replconf,
     Psync,
+    Wait,
     Unknown,
   };
 
@@ -77,6 +78,7 @@ struct Command {
     if (compareStrings(name, "discard")) { return Type::Discard; }
     if (compareStrings(name, "replconf")) { return Type::Replconf; }
     if (compareStrings(name, "psync")) { return Type::Psync; }
+    if (compareStrings(name, "wait")) { return Type::Wait; }
     return Type::Unknown;
   }
 

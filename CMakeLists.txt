@@ -154,6 +154,7 @@ add_executable(redis_tests
         tests/integration/info_replication_test.cpp
         tests/integration/replication_handshake_test.cpp
         tests/integration/replication_propagation_test.cpp
+        tests/integration/wait_test.cpp
         tests/helpers/test_server.hpp
         tests/helpers/test_client.hpp
 )
