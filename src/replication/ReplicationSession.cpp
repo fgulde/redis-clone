@@ -9,9 +9,19 @@
 #include <iterator>
 
 #include "../util/Logger.hpp"
+#include "../util/StringUtils.hpp"
 
 namespace {
   constexpr std::chrono::seconds kAckInterval{1}; ///< Matches real Redis's replica ACK heartbeat.
+
+  /* REPLCONF GETACK * arrives through the same command stream as normal propagated writes (its
+  bytes count toward the offset the same way), but must never reach handler_. It isn't a store
+  command, and the master expects an immediate REPLCONF ACK. */
+  auto is_getack(const RespValue& command) -> bool {
+    return command.type == RespValue::Type::Array && command.elements.size() >= 2 &&
+      string_utils::lowercase(command.elements.at(0).str) == "replconf" &&
+      string_utils::lowercase(command.elements.at(1).str) == "getack";
+  }
 }
 
 ReplicationSession::ReplicationSession(tcp::socket socket, const unsigned short listening_port,
@@ -172,6 +182,13 @@ auto ReplicationSession::try_process_one_buffered_command() -> bool {
 
   buf_.consume(consumed);
   replica_offset_ += consumed;
+
+  if (is_getack(*command_opt)) {
+    // Forces an immediate ACK, independent of the periodic timer; its own bytes already counted
+    // toward replica_offset_ above, exactly like real Redis.
+    send_ack();
+    return true;
+  }
 
   // Execute without sending a reply back to the master
   auto cmd = std::make_shared<RespValue>(*command_opt);

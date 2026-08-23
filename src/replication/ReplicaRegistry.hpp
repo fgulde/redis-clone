@@ -49,6 +49,13 @@ public:
   /// @brief Number of currently registered (connected) replicas.
   [[nodiscard]] auto replica_count() const -> std::size_t;
 
+  /**
+   * @brief Propagates REPLCONF GETACK * to every replica, forcing each to send an immediate
+   * REPLCONF ACK <offset> instead of waiting for its next periodic one. Counts toward
+   * master_offset() exactly like a normal propagated write, since it goes through propagate().
+   */
+  void request_getack() const;
+
 private:
   /// @brief Per-replica state: how to reach it, and the offset it last acknowledged.
   struct ReplicaState {

@@ -61,3 +61,14 @@ TEST(ReplicaRegistryTest, RemoveDropsReplicaFromCountAndAcks) {
     EXPECT_EQ(registry.replica_count(), 0U);
     EXPECT_EQ(registry.acked_offset(id), std::nullopt);
 }
+
+TEST(ReplicaRegistryTest, RequestGetackPropagatesReplconfGetackAndAdvancesOffset) {
+    ReplicaRegistry registry;
+    std::string received;
+    registry.add([&received](std::string data) -> void { received = std::move(data); });
+
+    registry.request_getack();
+
+    EXPECT_EQ(received, "*3\r\n$8\r\nREPLCONF\r\n$6\r\nGETACK\r\n$1\r\n*\r\n");
+    EXPECT_EQ(registry.master_offset(), static_cast<long long>(received.size()));
+}

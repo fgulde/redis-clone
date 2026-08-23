@@ -47,16 +47,26 @@ be re-litigated every session.
   `slaveN:offset=<N>` line per connected replica (reduced form of real Redis's `slaveN:ip=...`
   line — ip/port aren't tracked). Covered by `tests/unit/replica_registry_test.cpp` and
   `ReplicationPropagationTest.ReplicaAcknowledgesOffsetToMaster`.
+- **`REPLCONF GETACK *` (2026-08-22)**: `ReplicaRegistry::request_getack()` builds `REPLCONF
+  GETACK *` (via `RespValue` + `RespParser::serialize()`, matching `ReplicationSession::encode_array()`'s
+  style) and sends it through the normal `propagate()` path — so it fans out to every replica and
+  advances `master_offset()` exactly like a real write, with no dedicated caller yet (that's step
+  4's job; for now it's only exercised directly by tests). Replica side:
+  `try_process_one_buffered_command()` now checks each parsed command with a local `is_getack()`
+  helper *after* accounting its bytes into `replica_offset_` but *before* it would otherwise reach
+  `handler_`/the store-thread dispatch, and calls `send_ack()` directly instead — bypassing both
+  the store (GETACK isn't a store command) and the no-reply dispatch path that normal propagated
+  writes use (a real master expects an immediate `REPLCONF ACK`, not silence). Turned out **not**
+  to need a `Command::Type` split for `ACK` vs. `GETACK` after all (flagged as maybe-needed in step
+  2's notes) — both master-side `ACK` handling (`Connection.cpp`) and replica-side `GETACK`
+  handling (`ReplicationSession.cpp`) inspect the raw args/elements directly, mirroring each
+  other's approach. `Server`/`TestServer` gained a `replica_registry()` accessor purely so tests
+  can call `request_getack()` without a `WAIT` command to trigger it through the normal client
+  surface. Covered by `ReplicaRegistryTest.RequestGetackPropagatesReplconfGetackAndAdvancesOffset`
+  and `ReplicationPropagationTest.GetackForcesImmediateAckFromReplica` (which confirms the ack
+  lands well within one periodic-interval's worth of time, i.e. it really was immediate).
 
 ## Required for protocol completeness (the actual remaining scope)
-
-### 3. `REPLCONF GETACK *` (master → replica)
-
-- Sent *through the replication stream itself* (so it counts toward the offset like any other
-  propagated command) to force an immediate ACK, independent of the periodic one.
-- Replica side: this can't go through the normal no-op-reply command dispatch in
-  `try_process_one_buffered_command()` — it must be special-cased to write a real
-  `REPLCONF ACK <offset>` back on the socket.
 
 ### 4. `WAIT numreplicas timeout` command
 

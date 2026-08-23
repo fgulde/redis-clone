@@ -128,7 +128,7 @@ void Connection::do_read() {
       }
     }
 
-    // A synced replica periodically sends REPLCONF ACK <offset> without expecting a reply back — handle
+    // A synced replica periodically sends REPLCONF ACK <offset> without expecting a reply back. Handle
     // it here, before normal dispatch, since only Connection knows this socket's replica_id_.
     if (mode_ == ConnectionMode::Replication && parsed.type == Command::Type::Replconf &&
         !parsed.args.empty() && string_utils::lowercase(parsed.args.at(0)) == "ack") {

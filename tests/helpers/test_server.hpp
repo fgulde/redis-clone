@@ -55,6 +55,11 @@ public:
      */
     [[nodiscard]] auto port() const -> uint16_t { return port_; }
 
+    /**
+     * @brief Gets the underlying Server, for tests that need to reach internals (e.g. ReplicaRegistry).
+     */
+    [[nodiscard]] auto server() -> Server& { return *server_; }
+
 private:
     asio::io_context network_ctx_;
     asio::io_context store_ctx_;

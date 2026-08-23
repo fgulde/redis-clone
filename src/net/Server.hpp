@@ -31,6 +31,7 @@ public:
   auto store() -> auto& { return store_; }
   auto blocking_manager() -> auto& { return blocking_manager_; }
   auto watch_manager() -> auto& { return watch_manager_; }
+  [[nodiscard]] auto replica_registry() const -> const std::shared_ptr<ReplicaRegistry>& { return replica_registry_; }
 
 private:
   void do_accept();
