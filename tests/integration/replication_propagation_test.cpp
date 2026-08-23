@@ -204,6 +204,21 @@ TEST_F(ReplicationPropagationTest, ReplicaAcknowledgesOffsetToMaster) {
     EXPECT_NE(info.find(std::format("slave0:offset={}\r\n", expected_offset)), std::string::npos);
 }
 
+TEST_F(ReplicationPropagationTest, GetackForcesImmediateAckFromReplica) {
+    TestClient master_client(master().port());
+    EXPECT_EQ(master_client.command("SET", "getack-key", "v"), "+OK\r\n");
+    std::this_thread::sleep_for(200ms); // let the SET reach and be applied by the replica first
+
+    master().server().replica_registry()->request_getack();
+    const auto expected_offset = master_repl_offset(master_client);
+
+    // GETACK forces an immediate ACK — no need to wait for the 1s periodic one.
+    std::this_thread::sleep_for(200ms);
+
+    const auto info = master_client.command("INFO", "replication");
+    EXPECT_NE(info.find(std::format("slave0:offset={}\r\n", expected_offset)), std::string::npos);
+}
+
 TEST_F(ReplicationPropagationTest, ReadOnlyCommandsNotPropagated) {
     TestClient master_client(master().port());
     EXPECT_EQ(master_client.command("SET", "key1", "val1"), "+OK\r\n");

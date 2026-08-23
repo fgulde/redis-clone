@@ -39,7 +39,7 @@ struct Command {
     Discard,
     Replconf,
     Psync,
-    Unknown
+    Unknown,
   };
 
   Type type{ Type::Unknown };

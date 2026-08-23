@@ -6,6 +6,8 @@
 
 #include <ranges>
 
+#include "../resp/RespParser.hpp"
+
 auto ReplicaRegistry::add(WriteFn write_fn) -> ReplicaId {
   std::scoped_lock const lock(mu_);
   const auto replica_id = next_id_++;
@@ -59,4 +61,17 @@ auto ReplicaRegistry::acked_offsets() const -> std::vector<long long> {
 auto ReplicaRegistry::replica_count() const -> std::size_t {
   std::scoped_lock const lock(mu_);
   return replicas_.size();
+}
+
+void ReplicaRegistry::request_getack() const {
+  const RespValue command{
+    .type = RespValue::Type::Array,
+    .str = {},
+    .elements = {
+      RespValue{.type = RespValue::Type::BulkString, .str = "REPLCONF", .elements = {}},
+      RespValue{.type = RespValue::Type::BulkString, .str = "GETACK", .elements = {}},
+      RespValue{.type = RespValue::Type::BulkString, .str = "*", .elements = {}},
+    },
+  };
+  propagate(RespParser::serialize(command));
 }
